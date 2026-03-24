@@ -231,7 +231,7 @@ Dados individuais de cada jogador registrado no check-in.
 
 ### 6.1 Interface e Experiência
 
-- **RNF-01** Design System – Paleta baseada em verdes institucionais (`#1B4332`, `#2D6A4F`, `#40916C`) com fundo branco. Tipografia: DM Serif Display (headings) + DM Sans (corpo). Border-radius de 12px e 8px.
+- **RNF-01** Design System – Paleta baseada em verdes institucionais (`#1B4332`, `#2D6A4F`, `#40916C`) com fundo branco. Tipografia: DM Serif Display (headings) + DM Sans (corpo). Border-radius de 12px e 8px. Biblioteca de componentes: **shadcn/ui** com tokens CSS sobrescritos para a identidade JTC.
 - **RNF-02** Indicadores de Superfície – Círculos coloridos: Saibro (`#c4753b` – terracota), Hard Court (`#3b82c4` – azul), Grama (`#4ade80` – verde).
 - **RNF-03** Animações – Transições suaves (0.2-0.3s ease), animações de fadeInUp para cards e modais, dots pulsantes para status ao vivo, efeitos de hover com elevação (translateY).
 - **RNF-04** Responsividade – Grid de quadras muda de multi-coluna para coluna única em telas < 768px. TV Dashboard adapta padding e tamanho de fonte.
@@ -318,10 +318,11 @@ Componentes React identificados no protótipo e seu mapeamento para a implementa
 |---|---|---|
 | Navegação | Estado React local (`useState`) | Rotas Next.js App Router |
 | Autenticação | Credenciais hardcoded (`admin/admin`) | NextAuth com bcrypt hash e sessão JWT |
-| Banco de Dados | Estado em memória (arrays JS) | MySQL via Drizzle ORM |
+| Banco de Dados | Estado em memória (arrays JS) | Azure MySQL (`newdataserver.mysql.database.azure.com`) via Drizzle ORM. Fase inicial: dados mockados em `lib/mock/` |
+| Componentes UI | HTML/CSS vanilla inline | **shadcn/ui** tematizado com variáveis CSS do JTC |
 | Modo Chuva | Toggle manual do admin | Integração com API de clima + override manual |
 | WhatsApp | Apenas indicação visual | Integração real via API (Z-API, Evolution, Twilio) |
-| Exclusão de Trava | Sem confirmação | Modal de confirmação antes de excluir |
+| Exclusão de Trava | Sem confirmação | Modal `AlertDialog` do shadcn/ui antes de excluir |
 | Reservas | Geradas aleatoriamente | Persistidas no banco com lock otimista |
 | TV Refresh | `setInterval` no client | Polling na API ou Server-Sent Events |
 | Desativação Programada | Campos no formulário (não implementada) | Cron job ou check automático em cada request |
