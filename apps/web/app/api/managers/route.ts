@@ -15,14 +15,17 @@ export async function POST(req: Request) {
     if (!body.name?.trim()) {
       return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
     }
+    if (!body.phone?.trim()) {
+      return NextResponse.json({ error: "Telefone é obrigatório" }, { status: 400 })
+    }
 
     const [newManager] = await db
       .insert(managers)
       .values({
         name: body.name.trim(),
-        experience: body.experience || "júnior",
-        shifts: body.shifts || ["manhã"],
-        weekends: body.weekends ?? false,
+        phone: body.phone.trim(),
+        shifts: body.shifts || [],
+        active: true,
       })
       .returning()
 
