@@ -35,6 +35,21 @@ async function main() {
     await db.insert(users).values({
       username: "admin",
       passwordHash: bcrypt.hashSync("admin123", 10),
+      role: "admin",
+    });
+
+    console.log("🖥️ Criando usuário totem...");
+    await db.insert(users).values({
+      username: "totem",
+      passwordHash: bcrypt.hashSync("totem123", 10),
+      role: "totem",
+    });
+
+    console.log("📺 Criando usuário tv...");
+    await db.insert(users).values({
+      username: "tv",
+      passwordHash: bcrypt.hashSync("tv123", 10),
+      role: "tv",
     });
 
     // 3. Inserindo configurações

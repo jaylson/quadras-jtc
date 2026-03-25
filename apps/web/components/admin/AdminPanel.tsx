@@ -16,7 +16,7 @@ type CourtStatus = {
   remainingMinutes: number | null
 }
 
-type Tab = "quadras" | "agenda" | "responsaveis"
+type Tab = "quadras" | "agenda" | "responsaveis" | "configuracoes"
 
 export default function AdminPanel() {
   const [tab, setTab]               = useState<Tab>("quadras")
@@ -24,6 +24,7 @@ export default function AdminPanel() {
   const [blocks, setBlocks]         = useState<AdminBlock[]>([])
   const [statuses, setStatuses]     = useState<CourtStatus[]>([])
   const [managers, setManagers]     = useState<Manager[]>([])
+  const [appUsers, setAppUsers]     = useState<{ id: number; username: string; role: string }[]>([])
   const [rainMode, setRainMode]     = useState(false)
   const [loading, setLoading]       = useState(true)
 
@@ -70,11 +71,17 @@ export default function AdminPanel() {
     setManagers(await res.json())
   }, [])
 
+  const fetchAppUsers = useCallback(async () => {
+    const res = await fetch("/api/admin/users")
+    if (res.ok) setAppUsers(await res.json())
+  }, [])
+
   useEffect(() => {
     fetchAll()
     fetchBlocks()
     fetchManagers()
-  }, [fetchAll, fetchBlocks, fetchManagers])
+    fetchAppUsers()
+  }, [fetchAll, fetchBlocks, fetchManagers, fetchAppUsers])
 
   /* ── Estatísticas (RF-05) ── */
   const totalActive      = courts.filter((c) => c.active).length
@@ -171,6 +178,19 @@ export default function AdminPanel() {
     fetchManagers()
   }
 
+  async function updatePassword(username: string, newPassword: string) {
+    const res = await fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, newPassword }),
+    })
+    if (res.ok) {
+      alert(`Senha de ${username} atualizada com sucesso!`)
+    } else {
+      alert("Erro ao atualizar senha.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="ap-loading">
@@ -186,7 +206,7 @@ export default function AdminPanel() {
       {/* ── Top Bar: abas + botão primário (RF-11) ── */}
       <div className="ap-topbar">
         <div className="ap-tabs" role="tablist">
-          {(["quadras", "agenda", "responsaveis"] as Tab[]).map((t) => (
+          {(["quadras", "agenda", "responsaveis", "configuracoes"] as Tab[]).map((t) => (
             <button
               key={t}
               role="tab"
@@ -197,14 +217,16 @@ export default function AdminPanel() {
             >
               {t === "quadras" ? `Quadras (${courts.length})`
                : t === "agenda" ? `Agenda (${blocks.length})`
-               : `Responsáveis (${managers.length})`}
+               : t === "responsaveis" ? `Responsáveis (${managers.length})`
+               : "Configurações"}
             </button>
           ))}
         </div>
 
         <button
-          id={tab === "quadras" ? "btn-nova-quadra" : tab === "agenda" ? "btn-nova-trava" : "btn-novo-responsavel"}
+          id={tab === "quadras" ? "btn-nova-quadra" : tab === "agenda" ? "btn-nova-trava" : tab === "responsaveis" ? "btn-novo-responsavel" : "btn-sem-acao"}
           className="ap-primary-btn"
+          style={{ visibility: tab === "configuracoes" ? "hidden" : "visible" }}
           onClick={() =>
             tab === "quadras"
               ? setCourtModal({ open: true })
@@ -372,6 +394,55 @@ export default function AdminPanel() {
                 </div>
               )
             })}
+          </div>
+        </section>
+      )}
+
+      {/* ── ABA: Configurações ── */}
+      {tab === "configuracoes" && (
+        <section role="tabpanel" aria-labelledby="tab-configuracoes">
+          <div className="ap-config-container">
+            <h2 className="ap-config-title">Gestão de Acesso</h2>
+            <p className="ap-config-intro">Altere as senhas de acesso aos módulos do sistema.</p>
+
+            <div className="ap-users-list">
+              {appUsers.map((user) => (
+                <div key={user.id} className="ap-user-row">
+                  <div className="ap-user-info">
+                    <span className="ap-user-role-badge">
+                      {user.role === "admin" ? "🛠️" : user.role === "totem" ? "🖥️" : "📺"}
+                    </span>
+                    <div className="ap-user-text">
+                      <span className="ap-user-name">{user.username}</span>
+                      <span className="ap-user-role-label">Módulo {user.role.toUpperCase()}</span>
+                    </div>
+                  </div>
+
+                  <form
+                    className="ap-user-pw-form"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      const input = (e.target as any).newPassword
+                      if (input.value.length < 4) {
+                        alert("A senha deve ter pelo menos 4 caracteres.")
+                        return
+                      }
+                      updatePassword(user.username, input.value)
+                      input.value = ""
+                    }}
+                  >
+                    <input
+                      name="newPassword"
+                      type="password"
+                      placeholder="Nova senha"
+                      className="ap-config-input"
+                      required
+                    />
+                    <button type="submit" className="ap-config-btn">Atualizar</button>
+                  </form>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -561,6 +632,49 @@ export default function AdminPanel() {
         .ap-mgr-btn--edit:hover { background: #f0fdf4; }
         .ap-mgr-btn--delete { color: #dc2626; border-color: #fecaca; margin-left: auto; padding: 0 0.7rem; }
         .ap-mgr-btn--delete:hover { background: #fef2f2; }
+
+        /* ── Configurações ── */
+        .ap-config-container {
+          background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+          padding: 1.5rem; max-width: 600px; margin-top: 0.5rem;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .ap-config-title {
+          font-family: var(--font-dm-serif, serif);
+          font-size: 1.25rem; font-weight: 400; color: #1B4332; margin: 0 0 0.5rem;
+        }
+        .ap-config-intro { font-size: 0.85rem; color: #6b7280; margin-bottom: 2rem; }
+
+        .ap-users-list { display: flex; flex-direction: column; gap: 1.25rem; }
+        .ap-user-row {
+          display: flex; align-items: center; justify-content: space-between;
+          padding-bottom: 1.25rem; border-bottom: 1px solid #f3f4f6;
+          gap: 1rem; flex-wrap: wrap;
+        }
+        .ap-user-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .ap-user-info { display: flex; align-items: center; gap: 0.875rem; flex: 1; }
+        .ap-user-role-badge {
+          width: 40px; height: 40px; border-radius: 10px;
+          background: #f0fdf4; display: flex; align-items: center; justify-content: center;
+          font-size: 1.2rem;
+        }
+        .ap-user-text { display: flex; flex-direction: column; }
+        .ap-user-name { font-size: 0.95rem; font-weight: 600; color: #111827; }
+        .ap-user-role-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .ap-user-pw-form { display: flex; gap: 0.5rem; align-items: center; }
+        .ap-config-input {
+          height: 36px; padding: 0 0.75rem; border: 1.5px solid #e5e7eb;
+          border-radius: 8px; font-size: 0.85rem; font-family: inherit;
+          width: 140px; outline: none; transition: border-color 0.15s;
+        }
+        .ap-config-input:focus { border-color: #1B4332; }
+        .ap-config-btn {
+          height: 36px; padding: 0 1rem; background: #1B4332; color: #fff;
+          border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .ap-config-btn:hover { background: #2D6A4F; }
       `}</style>
     </div>
   )

@@ -1,14 +1,12 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
+import { db } from "./db"
+import { users } from "./db/schema"
+import { eq } from "drizzle-orm"
 
 /**
  * Configuração NextAuth v5 (Auth.js)
- *
- * Fase atual: valida contra usuário hardcoded (igual ao protótipo).
- * Quando F1-16 for concluído, substituir por consulta ao banco:
- *   const [user] = await db.select().from(users).where(eq(users.username, username))
- *   const valid = await compare(password, user.passwordHash)
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -23,23 +21,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           password: string
         }
 
-        // ──────────────────────────────────────────────────────────
-        // TODO (F1-16+): trocar por consulta ao Azure MySQL
-        // const [user] = await db.select().from(users)
-        //   .where(eq(users.username, username)).limit(1)
-        // if (!user) return null
-        // const valid = await compare(password, user.passwordHash)
-        // if (!valid) return null
-        // return { id: String(user.id), name: user.username }
-        // ──────────────────────────────────────────────────────────
+        if (!username || !password) return null
 
-        // Fase atual: credencial mockada (admin / admin123)
-        const MOCK_USERNAME = "admin"
-        const MOCK_PASSWORD = "admin123"
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, username))
+          .limit(1)
 
-        if (username !== MOCK_USERNAME || password !== MOCK_PASSWORD) return null
+        if (!user) return null
 
-        return { id: "1", name: "Administrador" }
+        const valid = await compare(password, user.passwordHash)
+        if (!valid) return null
+
+        return {
+          id: String(user.id),
+          name: user.username,
+          role: user.role, // Adicionando o papel do usuário
+        }
       },
     }),
   ],
@@ -51,12 +50,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        token.role = (user as any).role
+      }
       return token
     },
     session({ session, token }) {
       if (token.id && session.user) {
         session.user.id = token.id as string
+        (session.user as any).role = token.role
       }
       return session
     },

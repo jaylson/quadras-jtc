@@ -15,6 +15,13 @@
       "when": 1774465767830,
       "tag": "0001_graceful_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774466273803,
+      "tag": "0002_small_starhawk",
+      "breakpoints": true
     }
   ]
 }
