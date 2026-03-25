@@ -1,23 +1,31 @@
 import { NextResponse } from "next/server"
-import { getStore } from "@/lib/data/store"
+import { db } from "@/lib/db"
+import { courts } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 type Params = { params: Promise<{ id: string }> }
 
-/** F2-05 – Alternar status ativo/inativo */
+/** F2-05 – Alternar status ativo/inativo da quadra */
 export async function PATCH(_req: Request, { params }: Params) {
   const { id } = await params
   const courtId = Number(id)
-  const store = getStore()
-  const idx = store.courts.findIndex((c) => c.id === courtId)
 
-  if (idx === -1) {
-    return NextResponse.json({ error: "Quadra não encontrada" }, { status: 404 })
+  try {
+    const [court] = await db.select().from(courts).where(eq(courts.id, courtId)).limit(1)
+    if (!court) {
+      return NextResponse.json({ error: "Quadra não encontrada" }, { status: 404 })
+    }
+
+    const nextActive = !court.active
+    const [updated] = await db
+      .update(courts)
+      .set({ active: nextActive })
+      .where(eq(courts.id, courtId))
+      .returning()
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error("Erro ao alternar quadra:", err)
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
-
-  store.courts[idx] = {
-    ...store.courts[idx],
-    active: !store.courts[idx].active,
-  }
-
-  return NextResponse.json(store.courts[idx])
 }

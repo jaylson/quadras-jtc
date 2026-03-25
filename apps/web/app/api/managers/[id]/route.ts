@@ -1,58 +1,78 @@
 import { NextResponse } from "next/server"
-import { getStore } from "@/lib/data/store"
+import { db } from "@/lib/db"
+import { managers } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import type { NewManager } from "@/lib/db/schema"
 
 type Params = { params: Promise<{ id: string }> }
 
-function findManager(id: number) {
-  const store = getStore()
-  const idx = store.managers.findIndex((m) => m.id === id)
-  return { store, idx, manager: store.managers[idx] }
-}
-
-/** Editar responsável */
+/** F1-10 – Editar responsável */
 export async function PUT(req: Request, { params }: Params) {
   const { id } = await params
   const managerId = Number(id)
-  const { store, idx } = findManager(managerId)
-
-  if (idx === -1) {
-    return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
-  }
 
   try {
     const body = await req.json() as Partial<NewManager>
-    store.managers[idx] = { ...store.managers[idx], ...body, id: managerId }
-    return NextResponse.json(store.managers[idx])
-  } catch {
+    
+    const [updated] = await db
+      .update(managers)
+      .set({ ...body, id: managerId })
+      .where(eq(managers.id, managerId))
+      .returning()
+
+    if (!updated) {
+      return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
+    }
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error("Erro ao editar responsável:", err)
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
   }
 }
 
-/** Toggle ativo/inativo */
+/** F1-11 – Alternar ativo/inativo */
 export async function PATCH(_req: Request, { params }: Params) {
   const { id } = await params
   const managerId = Number(id)
-  const { store, idx } = findManager(managerId)
 
-  if (idx === -1) {
-    return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
+  try {
+    const [manager] = await db.select().from(managers).where(eq(managers.id, managerId)).limit(1)
+    if (!manager) {
+      return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
+    }
+
+    const [updated] = await db
+      .update(managers)
+      .set({ active: !manager.active })
+      .where(eq(managers.id, managerId))
+      .returning()
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error("Erro ao alternar responsável:", err)
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
-
-  store.managers[idx].active = !store.managers[idx].active
-  return NextResponse.json(store.managers[idx])
 }
 
-/** Remover responsável */
+/** F1-12 – Remover responsável */
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params
   const managerId = Number(id)
-  const { store, idx } = findManager(managerId)
 
-  if (idx === -1) {
-    return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
+  try {
+    const [deleted] = await db
+      .delete(managers)
+      .where(eq(managers.id, managerId))
+      .returning()
+
+    if (!deleted) {
+      return NextResponse.json({ error: "Responsável não encontrado" }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error("Erro ao remover responsável:", err)
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
-
-  store.managers.splice(idx, 1)
-  return NextResponse.json({ success: true })
 }
