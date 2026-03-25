@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudRain, Clock, User, AlertTriangle, Wrench, LayoutGrid, List } from "lucide-react";
+import { CloudRain, Clock, User, AlertTriangle, Wrench, LayoutGrid, List, Plane } from "lucide-react";
 
 // Native JS date formatting since date-fns might not be installed, wait we can use native JS
 // Actually I will just use native Intl.DateTimeFormat instead of date-fns to be safe.
@@ -11,7 +11,7 @@ export default function TVDashboard() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rainMode, setRainMode] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
+  const [viewMode, setViewMode] = useState<"list" | "cards" | "airplane">("list");
 
   useEffect(() => {
     // Clock tick every second
@@ -144,13 +144,33 @@ export default function TVDashboard() {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => setViewMode(v => v === "list" ? "cards" : "list")} 
-            className="flex items-center justify-center w-12 h-12 bg-black/40 hover:bg-white/10 rounded-2xl border border-white/5 transition-colors shadow-inner"
-          >
-            {viewMode === "list" ? <LayoutGrid className="w-5 h-5 text-white" /> : <List className="w-5 h-5 text-white" />}
-          </button>
+        <div className="flex items-center gap-6">
+          <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 shadow-inner gap-1">
+            {[
+              { id: "list", label: "Lista", icon: List },
+              { id: "cards", label: "Cards", icon: LayoutGrid },
+              { id: "airplane", label: "Avião", icon: Plane }
+            ].map((mode) => {
+              const isActive = viewMode === mode.id;
+              const Icon = mode.icon;
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => setViewMode(mode.id as any)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-300 font-sans tracking-tight ${
+                    isActive 
+                      ? "bg-[#2D6A4F] text-white shadow-lg shadow-[#1B4332]/40 border border-white/10" 
+                      : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-500"} ${mode.id === 'airplane' ? 'rotate-45' : ''}`} />
+                  <span className={`text-[11px] font-bold uppercase tracking-[0.1em] ${isActive ? "opacity-100" : "opacity-70"}`}>
+                    {mode.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
           <div className="flex items-center gap-4 bg-black/40 px-6 py-3 rounded-2xl border border-white/5 shadow-inner">
             <Clock className="w-6 h-6 text-[#4ade80]" />
             <span className="text-4xl font-mono tracking-tighter text-white font-light tabular-nums">
@@ -272,7 +292,7 @@ export default function TVDashboard() {
               )}
             </div>
           </div>
-        ) : (
+        ) : viewMode === "cards" ? (
           /* Cards View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {loading ? (
@@ -409,6 +429,146 @@ export default function TVDashboard() {
                 );
               })
             )}
+          </div>
+        ) : (
+          /* Airplane Mode (Departure Board) */
+          <div className="flex flex-col h-full bg-[#050A0F] rounded-3xl border-4 border-[#1A1F26] shadow-2xl overflow-hidden font-mono animate-in fade-in zoom-in-95 duration-700">
+            {/* Table Headers */}
+            <div className="grid grid-cols-12 gap-1 p-3 bg-[#1A1F26] text-[#A0A0A0] text-xs font-bold uppercase border-b-2 border-black tracking-widest">
+              <div className="col-span-2 pl-4">Quadra</div>
+              <div className="col-span-6">Tenistas</div>
+              <div className="col-span-1 text-center">Partida</div>
+              <div className="col-span-1 text-center">Estimado</div>
+              <div className="col-span-2 text-right pr-4">Observações</div>
+            </div>
+
+            {/* Rows */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-black">
+              {(() => {
+                const allItems = data.flatMap(row => [
+                  ...(row.todayReservations || []).map((r: any) => ({ 
+                    ...r, 
+                    courtName: row.court.name, 
+                    courtSurface: row.court.surface,
+                    type: 'reserva' 
+                  })),
+                  ...(row.todayBlocks || []).map((b: any) => ({ 
+                    ...b, 
+                    courtName: row.court.name, 
+                    courtSurface: row.court.surface,
+                    type: 'trava', 
+                    playerName: b.title 
+                  }))
+                ]).filter(item => {
+                  const end = item.type === 'reserva' 
+                    ? new Date(item.endTime).getTime() 
+                    : new Date(`${item.date}T${item.endTime}`).getTime();
+                  return end > (currentTime?.getTime() || Date.now());
+                });
+
+                // Ordenar pela hora fim e quadra (conforme pedido pelo usuário)
+                allItems.sort((a, b) => {
+                  const endA = a.type === 'reserva' ? new Date(a.endTime).getTime() : new Date(`${a.date}T${a.endTime}`).getTime();
+                  const endB = b.type === 'reserva' ? new Date(b.endTime).getTime() : new Date(`${b.date}T${b.endTime}`).getTime();
+                  
+                  if (endA !== endB) return endA - endB;
+                  return a.courtName.localeCompare(b.courtName);
+                });
+
+                if (allItems.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center py-20 text-slate-600 italic uppercase tracking-widest text-2xl font-black">
+                      Sem partidas programadas
+                    </div>
+                  );
+                }
+
+                return allItems.map((item, idx) => {
+                  const isRes = item.type === 'reserva';
+                  const startStr = isRes ? new Date(item.startTime).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}) : item.startTime;
+                  const endStr = isRes ? new Date(item.endTime).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"}) : item.endTime;
+                  
+                  const now = currentTime.getTime();
+                  const itemStart = isRes ? new Date(item.startTime).getTime() : new Date(`${item.date}T${item.startTime}`).getTime();
+                  const itemEnd = isRes ? new Date(item.endTime).getTime() : new Date(`${item.date}T${item.endTime}`).getTime();
+
+                  let statusText = "CONFIRMADO";
+                  let statusColor = "text-green-400";
+
+                  if (now >= itemStart && now <= itemEnd) {
+                    statusText = "EM USO";
+                    statusColor = "text-yellow-400 animate-pulse";
+                  } else if (now > itemEnd) {
+                    statusText = "FINALIZADO";
+                    statusColor = "text-slate-600";
+                  } else if (itemStart - now < 15 * 60 * 1000) {
+                    statusText = "EMBARQUE";
+                    statusColor = "text-blue-400";
+                  }
+
+                  if (item.type === 'trava') {
+                    statusText = item.category === 'manutencao' ? "MANUTENÇÃO" : "BLOQUEADO";
+                    statusColor = "text-orange-500 font-bold";
+                  }
+
+                  // Court Branding
+                  const courtStyles: Record<string, { bg: string, label: string }> = {
+                    saibro: { bg: "bg-[#c4753b]", label: "CLAY" },
+                    hard: { bg: "bg-blue-600", label: "HARD" },
+                    grama: { bg: "bg-green-600", label: "GRASS" }
+                  };
+                  const brand = courtStyles[item.courtSurface] || { bg: "bg-slate-700", label: "COURT" };
+                  
+                  return (
+                    <div key={`${item.type}-${item.id}`} className={`grid grid-cols-12 gap-1 px-3 py-6 items-center border-b border-white/[0.05] ${idx % 2 === 0 ? "bg-black" : "bg-white/[0.01]"} hover:bg-white/[0.04] transition-colors group`}>
+                      {/* Court */}
+                      <div className="col-span-2 flex items-center gap-4">
+                         <div className={`${brand.bg} w-16 h-10 flex flex-col items-center justify-center rounded shadow-inner border border-white/10 group-hover:scale-110 transition-transform`}>
+                            <span className="text-[10px] font-black text-white italic tracking-tighter leading-none">JTC</span>
+                            <span className="text-[10px] font-bold text-white/80 uppercase tracking-widest">{brand.label}</span>
+                         </div>
+                         <span className="text-xl font-bold text-white group-hover:text-yellow-400 transition-colors uppercase truncate">
+                            {item.courtName}
+                         </span>
+                      </div>
+                      
+                      {/* Destino / Jogadores */}
+                      <div className="col-span-6 text-3xl font-black text-white uppercase truncate tracking-tight pr-6 drop-shadow-sm">
+                         {item.playerName}
+                      </div>
+
+                      {/* Partida */}
+                      <div className="col-span-1 text-center text-4xl font-black text-white/90 tabular-nums tracking-tighter">
+                         {startStr}
+                      </div>
+
+                      {/* Estimado */}
+                      <div className="col-span-1 text-center text-4xl font-black text-white tabular-nums tracking-tighter">
+                         {endStr}
+                      </div>
+
+                      {/* Observações */}
+                      <div className={`col-span-2 text-right pr-6 text-2xl font-black uppercase italic ${statusColor} tracking-tighter whitespace-nowrap`}>
+                         {statusText}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            
+            <div className="bg-[#1A1F26] p-4 flex justify-between items-center px-10 border-t-4 border-black/40">
+              <div className="flex items-center gap-4 text-xs font-bold text-white/40 uppercase tracking-[0.4em]">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" /> 
+                System: Active
+              </div>
+              <div className="text-xs font-black text-white/20 uppercase tracking-[0.5em]">
+                JTC Court Operation Center
+              </div>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(i => <div key={i} className="w-1 h-3 bg-white/10 rounded-full" />)}
+              </div>
+            </div>
           </div>
         )}
       </main>
