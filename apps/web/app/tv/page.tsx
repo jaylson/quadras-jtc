@@ -314,10 +314,11 @@ export default function TVDashboard() {
                 const mergedAgenda = [
                   ...resList.map((r: any) => ({ ...r, type: 'reserva' })),
                   ...blockList.map((b: any) => ({ ...b, type: 'trava' }))
-                ].sort((a, b) => {
-                  const timeA = a.type === 'reserva' ? a.startTime : `${dateString.split(",")[0]}T${a.startTime}:00.000Z`;
-                  const timeB = b.type === 'reserva' ? b.startTime : `${dateString.split(",")[0]}T${b.startTime}:00.000Z`;
-                  // Na verdade trava já vem com date, startTime...
+                ].filter(item => {
+                  const isRes = item.type === 'reserva';
+                  const end = isRes ? new Date(item.endTime).getTime() : new Date(`${item.date}T${item.endTime}`).getTime();
+                  return end > (currentTime?.getTime() || Date.now());
+                }).sort((a, b) => {
                   const startA = a.type === 'reserva' ? new Date(a.startTime).getTime() : new Date(`${a.date}T${a.startTime}`).getTime();
                   const startB = b.type === 'reserva' ? new Date(b.startTime).getTime() : new Date(`${b.date}T${b.startTime}`).getTime();
                   return startA - startB;
@@ -378,7 +379,6 @@ export default function TVDashboard() {
                           const start = isRes ? new Date(item.startTime) : new Date(`${item.date}T${item.startTime}`);
                           const end   = isRes ? new Date(item.endTime)   : new Date(`${item.date}T${item.endTime}`);
                           const isActive = isEmUso && row.activeReservation?.id === item.id && isRes;
-                          const isPast = end < (currentTime || new Date());
                           
                           return (
                             <div 
@@ -386,7 +386,6 @@ export default function TVDashboard() {
                               className={`flex items-center justify-between p-3 rounded-xl border ${
                                 isActive ? 'bg-white/10 border-white/20' : 
                                 !isRes ? 'bg-orange-500/10 border-orange-500/30' :
-                                isPast ? 'bg-black/10 border-white/5 opacity-50' : 
                                 'bg-black/20 border-white/5'
                               }`}
                             >

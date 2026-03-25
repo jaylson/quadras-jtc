@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, SessionProvider } from "next-auth/react"
 import Link from "next/link"
 
-export default function TvLoginPage() {
+function LoginContent() {
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -35,7 +35,6 @@ export default function TvLoginPage() {
   return (
     <div className="login-root">
       <div className="login-bg" aria-hidden="true" />
-
       <main className="login-card">
         <div className="login-header">
           <Link href="/" className="login-back">← Voltar</Link>
@@ -104,7 +103,6 @@ export default function TvLoginPage() {
           inset: 0;
           background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(27,67,50,0.5), rgba(13,35,24,0.95));
         }
-
         .login-card {
           position: relative;
           z-index: 1;
@@ -117,12 +115,10 @@ export default function TvLoginPage() {
           box-shadow: 0 24px 80px rgba(0,0,0,0.4);
           animation: fadeInUp 0.35s ease forwards;
         }
-
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
         .login-header {
           display: flex;
           flex-direction: column;
@@ -140,7 +136,6 @@ export default function TvLoginPage() {
           transition: color 0.15s;
         }
         .login-back:hover { color: #1B4332; }
-
         .login-icon { font-size: 2rem; margin-bottom: 0.25rem; }
         .login-title {
           font-family: var(--font-dm-serif, serif);
@@ -155,7 +150,6 @@ export default function TvLoginPage() {
           margin: 0;
           letter-spacing: 0.02em;
         }
-
         .login-form {
           display: flex;
           flex-direction: column;
@@ -190,7 +184,6 @@ export default function TvLoginPage() {
           background: #fff;
         }
         .field-input::placeholder { color: #9ca3af; }
-
         .login-error {
           font-size: 0.85rem;
           color: #dc2626;
@@ -200,7 +193,6 @@ export default function TvLoginPage() {
           padding: 0.6rem 0.875rem;
           margin: 0;
         }
-
         .login-btn {
           height: 46px;
           border-radius: 12px;
@@ -219,5 +211,13 @@ export default function TvLoginPage() {
         .login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
       `}</style>
     </div>
+  )
+}
+
+export default function TvLoginPage() {
+  return (
+    <SessionProvider basePath="/api/auth/tv">
+      <LoginContent />
+    </SessionProvider>
   )
 }

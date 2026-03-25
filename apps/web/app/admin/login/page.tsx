@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { signIn, SessionProvider } from "next-auth/react"
 import Link from "next/link"
 
-export default function AdminLoginPage() {
+function LoginContent() {
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -17,6 +17,7 @@ export default function AdminLoginPage() {
     setError(null)
 
     startTransition(async () => {
+      // O signIn agora usará o basePath do SessionProvider
       const result = await signIn("credentials", {
         username,
         password,
@@ -34,11 +35,8 @@ export default function AdminLoginPage() {
 
   return (
     <div className="login-root">
-      {/* Fundo verde com textura */}
       <div className="login-bg" aria-hidden="true" />
-
       <main className="login-card">
-        {/* Header */}
         <div className="login-header">
           <Link href="/" className="login-back">← Voltar</Link>
           <span className="login-icon">🎾</span>
@@ -46,7 +44,6 @@ export default function AdminLoginPage() {
           <p className="login-subtitle">Painel de Gestão de Quadras</p>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className="login-form" noValidate>
           <div className="field-group">
             <label htmlFor="login-username" className="field-label">Usuário</label>
@@ -77,7 +74,6 @@ export default function AdminLoginPage() {
             />
           </div>
 
-          {/* RF-02: erro inline em vermelho */}
           {error && (
             <p role="alert" className="login-error">{error}</p>
           )}
@@ -108,7 +104,6 @@ export default function AdminLoginPage() {
           inset: 0;
           background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(27,67,50,0.5), rgba(13,35,24,0.95));
         }
-
         .login-card {
           position: relative;
           z-index: 1;
@@ -121,12 +116,10 @@ export default function AdminLoginPage() {
           box-shadow: 0 24px 80px rgba(0,0,0,0.4);
           animation: fadeInUp 0.35s ease forwards;
         }
-
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
         .login-header {
           display: flex;
           flex-direction: column;
@@ -144,7 +137,6 @@ export default function AdminLoginPage() {
           transition: color 0.15s;
         }
         .login-back:hover { color: #1B4332; }
-
         .login-icon { font-size: 2rem; margin-bottom: 0.25rem; }
         .login-title {
           font-family: var(--font-dm-serif, serif);
@@ -159,7 +151,6 @@ export default function AdminLoginPage() {
           margin: 0;
           letter-spacing: 0.02em;
         }
-
         .login-form {
           display: flex;
           flex-direction: column;
@@ -194,7 +185,6 @@ export default function AdminLoginPage() {
           background: #fff;
         }
         .field-input::placeholder { color: #9ca3af; }
-
         .login-error {
           font-size: 0.85rem;
           color: #dc2626;
@@ -204,7 +194,6 @@ export default function AdminLoginPage() {
           padding: 0.6rem 0.875rem;
           margin: 0;
         }
-
         .login-btn {
           height: 46px;
           border-radius: 12px;
@@ -223,5 +212,13 @@ export default function AdminLoginPage() {
         .login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
       `}</style>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <SessionProvider basePath="/api/auth/admin">
+      <LoginContent />
+    </SessionProvider>
   )
 }
