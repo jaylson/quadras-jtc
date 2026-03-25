@@ -192,15 +192,15 @@ O JTC é uma aplicação web para gestão de quadras de tênis em clubes, com tr
 
 ### FASE 5 — Frontend – Módulo TV Dashboard
 
-- [ ] **F5-01** Criar rota `/tv` com layout full-screen kiosk
-- [ ] **F5-02** Implementar RF-31: header com branding, data por extenso e relógio em tempo real (tick a cada 1s)
-- [ ] **F5-03** Implementar RF-32: tabela estilo painel de aeroporto (Início / Jogador / Quadra / Término / Tipo / Status)
-- [ ] **F5-04** Implementar RF-33: pills de status (Em Uso / Livre / Chuva / Manutenção) com dots pulsantes
-- [ ] **F5-05** Implementar RF-34: ordenação por prioridade de status + desempate alfabético
-- [ ] **F5-06** Implementar RF-35: auto-refresh a cada 30 segundos
-- [ ] **F5-07** Implementar RF-36: banner de chuva ativo na TV
-- [ ] **F5-08** Implementar RF-37: animação de entrada das linhas (fadeIn com delay escalonado)
-- [ ] **F5-09** Garantir operação estável modo kiosk (RNF-07: sem degradação após horas)
+- [x] **F5-01** Criar rota `/tv` com layout full-screen kiosk
+- [x] **F5-02** Implementar RF-31: header com branding, data por extenso e relógio em tempo real (tick a cada 1s)
+- [x] **F5-03** Implementar RF-32: tabela estilo painel de aeroporto (Início / Jogador / Quadra / Término / Tipo / Status)
+- [x] **F5-04** Implementar RF-33: pills de status (Em Uso / Livre / Chuva / Manutenção) com dots pulsantes
+- [x] **F5-05** Implementar RF-34: ordenação por prioridade de status + desempate alfabético
+- [x] **F5-06** Implementar RF-35: auto-refresh a cada 30 segundos
+- [x] **F5-07** Implementar RF-36: banner de chuva ativo na TV
+- [x] **F5-08** Implementar RF-37: animação de entrada das linhas (fadeIn com delay escalonado)
+- [x] **F5-09** Garantir operação estável modo kiosk (RNF-07: sem degradação após horas)
 
 ---
 
