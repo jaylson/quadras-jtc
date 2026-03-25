@@ -1,31 +1,27 @@
-import { drizzle } from "drizzle-orm/mysql2"
-import mysql from "mysql2/promise"
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
 import * as schema from "./schema"
 
 // Singleton de conexão para evitar múltiplas pools no Next.js dev (hot reload)
 declare global {
   // eslint-disable-next-line no-var
-  var _mysqlPool: mysql.Pool | undefined
+  var _postgresClient: postgres.Sql | undefined
 }
 
-function createPool() {
+function createClient() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL não definida. Configure .env.local")
   }
 
-  return mysql.createPool({
-    uri: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }, // Azure MySQL exige SSL
-    waitForConnections: true,
-    connectionLimit: 10,
-  })
+  // Supabase PostgreSQL
+  return postgres(process.env.DATABASE_URL, { prepare: false })
 }
 
-const pool = globalThis._mysqlPool ?? createPool()
+const client = globalThis._postgresClient ?? createClient()
 
 if (process.env.NODE_ENV !== "production") {
-  globalThis._mysqlPool = pool
+  globalThis._postgresClient = client
 }
 
-export const db = drizzle(pool, { schema, mode: "default" })
+export const db = drizzle(client, { schema })
 export type DB = typeof db
