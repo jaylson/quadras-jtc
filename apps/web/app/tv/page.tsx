@@ -520,7 +520,7 @@ export default function TVDashboard() {
                   const brand = courtStyles[item.courtSurface] || { bg: "bg-slate-700", label: "COURT" };
                   
                   return (
-                    <div key={`${item.type}-${item.id}`} className={`grid grid-cols-12 gap-1 px-3 py-6 items-center border-b border-white/[0.05] ${idx % 2 === 0 ? "bg-black" : "bg-white/[0.01]"} hover:bg-white/[0.04] transition-colors group`}>
+                    <div key={`${item.type}-${item.id}`} className={`grid grid-cols-12 gap-1 px-3 py-6 items-center border-b border-white/[0.05] ${idx % 2 === 0 ? "bg-[#050A0F]" : "bg-[#0F1923]"} hover:bg-white/[0.06] transition-colors group`}>
                       {/* Court */}
                       <div className="col-span-2 flex items-center gap-4">
                          <div className={`${brand.bg} w-16 h-10 flex flex-col items-center justify-center rounded shadow-inner border border-white/10 group-hover:scale-110 transition-transform`}>
