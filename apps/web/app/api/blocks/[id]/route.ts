@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
-import { getStore } from "@/lib/data/store"
+import { db } from "@/lib/db"
+import { adminBlocks } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 import type { NewAdminBlock } from "@/lib/db/schema"
 
 type Params = { params: Promise<{ id: string }> }
@@ -8,17 +10,10 @@ type Params = { params: Promise<{ id: string }> }
 export async function PUT(req: Request, { params }: Params) {
   const { id } = await params
   const blockId = Number(id)
-  const store = getStore()
-  const idx = store.blocks.findIndex((b) => b.id === blockId)
-
-  if (idx === -1) {
-    return NextResponse.json({ error: "Trava não encontrada" }, { status: 404 })
-  }
 
   try {
     const body = await req.json() as Partial<NewAdminBlock>
 
-    // RN-13: título e quadra continuam obrigatórios na edição
     if (body.title !== undefined && !body.title.trim()) {
       return NextResponse.json({ error: "Título é obrigatório" }, { status: 400 })
     }
@@ -26,9 +21,22 @@ export async function PUT(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Selecione ao menos uma quadra" }, { status: 400 })
     }
 
-    store.blocks[idx] = { ...store.blocks[idx], ...body, id: blockId }
-    return NextResponse.json(store.blocks[idx])
-  } catch {
+    const [updatedBlock] = await db
+      .update(adminBlocks)
+      .set({
+        ...body,
+        id: blockId, // Garantir que o ID não mude
+      })
+      .where(eq(adminBlocks.id, blockId))
+      .returning()
+
+    if (!updatedBlock) {
+      return NextResponse.json({ error: "Trava não encontrada" }, { status: 404 })
+    }
+
+    return NextResponse.json(updatedBlock)
+  } catch (err) {
+    console.error("Erro ao editar trava:", err)
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 })
   }
 }
@@ -37,13 +45,15 @@ export async function PUT(req: Request, { params }: Params) {
 export async function DELETE(_req: Request, { params }: Params) {
   const { id } = await params
   const blockId = Number(id)
-  const store = getStore()
-  const idx = store.blocks.findIndex((b) => b.id === blockId)
 
-  if (idx === -1) {
+  const [deletedBlock] = await db
+    .delete(adminBlocks)
+    .where(eq(adminBlocks.id, blockId))
+    .returning()
+
+  if (!deletedBlock) {
     return NextResponse.json({ error: "Trava não encontrada" }, { status: 404 })
   }
 
-  store.blocks.splice(idx, 1)
   return NextResponse.json({ success: true })
 }

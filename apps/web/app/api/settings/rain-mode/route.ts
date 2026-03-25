@@ -1,23 +1,41 @@
 import { NextResponse } from "next/server"
-import { getStore } from "@/lib/data/store"
+import { db } from "@/lib/db"
+import { settings } from "@/lib/db/schema"
+import { eq } from "drizzle-orm"
 
 /**
  * F2-16 – Alternar modo chuva.
- * Aceita body { rainMode: boolean } para definir o valor, ou alterna se não informado.
- * Implementa base para RN-02 e RN-09 (filtro de quadras por clima) — a lógica
- * de aplicação dessas regras está em GET /api/courts/status.
  */
 export async function PATCH(req: Request) {
-  const store = getStore()
-
   try {
-    const body = await req.json() as { rainMode?: boolean }
-    // Se body.rainMode não informado, alterna o valor atual
-    store.rainMode = body.rainMode !== undefined ? body.rainMode : !store.rainMode
-  } catch {
-    // Body vazio ou inválido → alterna
-    store.rainMode = !store.rainMode
-  }
+    const [currentSetting] = await db
+      .select({ value: settings.value })
+      .from(settings)
+      .where(eq(settings.key, "rain_mode"))
+      .limit(1)
 
-  return NextResponse.json({ rainMode: store.rainMode })
+    let currentMode = currentSetting?.value === "1"
+    
+    try {
+      const body = await req.json() as { rainMode?: boolean }
+      currentMode = body.rainMode !== undefined ? body.rainMode : !currentMode
+    } catch {
+      currentMode = !currentMode
+    }
+
+    const nextValue = currentMode ? "1" : "0"
+
+    await db
+      .insert(settings)
+      .values({ key: "rain_mode", value: nextValue })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value: nextValue },
+      })
+
+    return NextResponse.json({ rainMode: currentMode })
+  } catch (err) {
+    console.error("Erro ao alternar modo chuva:", err)
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
+  }
 }

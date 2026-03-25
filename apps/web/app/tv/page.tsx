@@ -106,9 +106,9 @@ export default function TVDashboard() {
         );
       case "inativa":
         return (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-500/10 text-gray-400 border border-gray-500/20">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
             <Wrench className="w-4 h-4" />
-            <span className="font-bold tracking-wide uppercase text-sm">Manutenção</span>
+            <span className="font-bold tracking-wide uppercase text-sm">Bloqueio / Manut.</span>
           </div>
         );
       default:
@@ -307,7 +307,21 @@ export default function TVDashboard() {
                 }
 
                 const animDelay = `${index * 100}ms`;
-                const reservations = row.todayReservations || [];
+                
+                // Unir reservas e travas para mostrar na fila
+                const resList = row.todayReservations || [];
+                const blockList = row.todayBlocks || [];
+                const mergedAgenda = [
+                  ...resList.map((r: any) => ({ ...r, type: 'reserva' })),
+                  ...blockList.map((b: any) => ({ ...b, type: 'trava' }))
+                ].sort((a, b) => {
+                  const timeA = a.type === 'reserva' ? a.startTime : `${dateString.split(",")[0]}T${a.startTime}:00.000Z`;
+                  const timeB = b.type === 'reserva' ? b.startTime : `${dateString.split(",")[0]}T${b.startTime}:00.000Z`;
+                  // Na verdade trava já vem com date, startTime...
+                  const startA = a.type === 'reserva' ? new Date(a.startTime).getTime() : new Date(`${a.date}T${a.startTime}`).getTime();
+                  const startB = b.type === 'reserva' ? new Date(b.startTime).getTime() : new Date(`${b.date}T${b.startTime}`).getTime();
+                  return startA - startB;
+                });
 
                 return (
                   <div 
@@ -353,33 +367,35 @@ export default function TVDashboard() {
                     {/* Reservations List */}
                     <div className="p-6 flex-1 flex flex-col gap-3 min-h-[150px] max-h-[250px] overflow-y-auto custom-scrollbar">
                       <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
-                        Fila de Hoje {reservations.length > 0 ? `(${reservations.length})` : ""}
+                        Fila de Hoje {mergedAgenda.length > 0 ? `(${mergedAgenda.length})` : ""}
                       </div>
                       
-                      {reservations.length === 0 ? (
+                      {mergedAgenda.length === 0 ? (
                         <div className="text-sm text-slate-500 italic mt-2">Fila vazia para hoje.</div>
                       ) : (
-                        reservations.map((res: any) => {
-                          const start = new Date(res.startTime);
-                          const end = new Date(res.endTime);
-                          const isActive = isEmUso && row.activeReservation?.id === res.id;
+                        mergedAgenda.map((item: any) => {
+                          const isRes = item.type === 'reserva';
+                          const start = isRes ? new Date(item.startTime) : new Date(`${item.date}T${item.startTime}`);
+                          const end   = isRes ? new Date(item.endTime)   : new Date(`${item.date}T${item.endTime}`);
+                          const isActive = isEmUso && row.activeReservation?.id === item.id && isRes;
                           const isPast = end < (currentTime || new Date());
                           
                           return (
                             <div 
-                              key={res.id} 
+                              key={isRes ? `res-${item.id}` : `block-${item.id}`} 
                               className={`flex items-center justify-between p-3 rounded-xl border ${
                                 isActive ? 'bg-white/10 border-white/20' : 
+                                !isRes ? 'bg-orange-500/10 border-orange-500/30' :
                                 isPast ? 'bg-black/10 border-white/5 opacity-50' : 
                                 'bg-black/20 border-white/5'
                               }`}
                             >
                               <div className="flex flex-col">
-                                <span className="text-sm font-medium text-slate-200 truncate max-w-[120px]" title={res.playerName}>
-                                  {res.playerName}
+                                <span className={`text-sm font-medium truncate max-w-[120px] ${!isRes ? 'text-orange-400' : 'text-slate-200'}`} title={isRes ? item.playerName : item.title}>
+                                  {isRes ? item.playerName : item.title}
                                 </span>
                                 <span className="text-xs text-slate-400">
-                                  {res.gameType === "simples" ? "Simples" : "Duplas"}
+                                  {isRes ? (item.gameType === "simples" ? "Simples" : "Duplas") : (item.category === "manutencao" ? "Manutenção" : "Bloqueio")}
                                 </span>
                               </div>
                               <div className="text-sm font-mono text-slate-300">

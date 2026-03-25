@@ -1,4 +1,4 @@
-import type { Court, Reservation } from "@/lib/db/schema"
+import type { Court, Reservation, AdminBlock } from "@/lib/db/schema"
 
 /**
  * Formata um Date para HH:MM no locale pt-BR.
@@ -82,6 +82,7 @@ export function getNextAvailableSlot(
 export function getCourtStatus(
   court: Court,
   reservations: Reservation[],
+  blocks: AdminBlock[],
   isRaining: boolean
 ): "em-uso" | "disponivel" | "bloqueada-chuva" | "inativa" {
   // RN-01: quadra inativa
@@ -92,8 +93,29 @@ export function getCourtStatus(
     return "bloqueada-chuva"
   }
 
-  // RN-03: verificar reserva ativa no momento
   const now = new Date()
+  const dateStr = now.toISOString().slice(0, 10)
+  const currentTime = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false })
+
+  // RF-36: Verificar se há uma trava administrativa ativa
+  const activeBlock = blocks.find(b => {
+    if (!b.courtIds.includes(court.id)) return false
+
+    // Verifica se a trava é para hoje (data exata ou recorrência semanal)
+    let matchesToday = b.date === dateStr
+    if (!matchesToday && b.recurring === "semanal") {
+      const blockDay = new Date(b.date).getDay()
+      const todayDay = now.getDay()
+      matchesToday = blockDay === todayDay && b.date <= dateStr
+    }
+
+    if (!matchesToday) return false
+    return currentTime >= b.startTime && currentTime < b.endTime
+  })
+
+  if (activeBlock) return "inativa"
+
+  // RN-03: verificar reserva ativa no momento
   const active = reservations.find(
     (r) =>
       r.courtId === court.id &&
