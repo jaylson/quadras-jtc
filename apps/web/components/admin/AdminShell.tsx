@@ -14,7 +14,7 @@ export default function AdminShell({ session, children }: AdminShellProps) {
     <SessionProvider session={session} basePath="/api/auth/admin">
       <div className="admin-shell">
         {/* ── Header ── */}
-        <header className="admin-header">
+        <header className="admin-header no-print">
           <div className="admin-header-left">
             <Link href="/" className="admin-brand">
               <span>🎾</span>

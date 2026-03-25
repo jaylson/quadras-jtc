@@ -3,24 +3,53 @@ import { db } from "@/lib/db"
 import { reservations, courts, settings, adminBlocks } from "@/lib/db/schema"
 import type { NewReservation, Player } from "@/lib/db/schema"
 import { getNextAvailableSlot, getCourtStatus, getEffectiveUsage } from "@/lib/utils/courts"
-import { and, gte, eq, ne, lt, gt } from "drizzle-orm"
+import { and, gte, eq, ne, lt, gt, lte } from "drizzle-orm"
 
-/** F2-10 – Listar reservas ativas e futuras */
-export async function GET() {
-  const now = new Date()
+/** F2-10 – Listar reservas com filtros opcionais (data, quadra, status) */
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const from    = searchParams.get("from")    // YYYY-MM-DD
+  const to      = searchParams.get("to")      // YYYY-MM-DD
+  const courtId = searchParams.get("courtId") // number
 
-  // Retorna reservas em uso ou agendadas (não concluídas)
-  const active = await db
+  const where = []
+
+  if (from) {
+    // Para garantir que pegamos o dia inteiro em qualquer fuso horário (local vs UTC),
+    // expandimos a busca para +/- 24h e depois refinamos se necessário, 
+    // ou usamos um range que cubra o dia local [from 00:00, to 23:59]
+    // Como o servidor pode estar em UTC, 2026-03-25 00:00 BRT é 2026-03-25 03:00 UTC.
+    // E 2026-03-25 23:59 BRT é 2026-03-26 02:59 UTC.
+    // Um range de [from - 12h] até [to + 36h] é seguro para qualquer fuso.
+    const start = new Date(from + "T00:00:00")
+    const searchStart = new Date(start.getTime() - 12 * 60 * 60 * 1000)
+    const searchEnd = new Date(start.getTime() + 36 * 60 * 60 * 1000)
+    
+    where.push(gte(reservations.startTime, searchStart))
+    where.push(lte(reservations.startTime, searchEnd))
+  }
+  if (courtId) {
+    where.push(eq(reservations.courtId, parseInt(courtId)))
+  }
+
+  // Se nenhum filtro de data for passado, mantemos a lógica original de mostrar apenas futuras/em uso
+  if (!from && !to) {
+    const now = new Date()
+    where.push(
+      and(
+        ne(reservations.status, "concluída"),
+        gt(reservations.endTime, now)
+      )
+    )
+  }
+
+  const results = await db
     .select()
     .from(reservations)
-    .where(
-        and(
-            ne(reservations.status, "concluída"),
-            gt(reservations.endTime, now)
-        )
-    )
+    .where(where.length > 0 ? and(...where) : undefined)
+    .orderBy(reservations.startTime)
 
-  return NextResponse.json(active)
+  return NextResponse.json(results)
 }
 
 /** F2-11 – Criar reserva (check-in Totem) */

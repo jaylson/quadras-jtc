@@ -9,6 +9,7 @@ import BlockModal from "@/components/admin/BlockModal"
 import WeeklyCalendar from "@/components/admin/WeeklyCalendar"
 import UpcomingBlocks from "@/components/admin/UpcomingBlocks"
 import ManagerModal from "@/components/admin/ManagerModal"
+import DiaryView from "@/components/admin/DiaryView"
 
 type CourtStatus = {
   court: Court
@@ -16,7 +17,7 @@ type CourtStatus = {
   remainingMinutes: number | null
 }
 
-type Tab = "quadras" | "agenda" | "responsaveis" | "configuracoes"
+type Tab = "quadras" | "agenda" | "diario" | "responsaveis" | "configuracoes"
 
 export default function AdminPanel() {
   const [tab, setTab]               = useState<Tab>("quadras")
@@ -204,9 +205,9 @@ export default function AdminPanel() {
     <div className="ap-root">
 
       {/* ── Top Bar: abas + botão primário (RF-11) ── */}
-      <div className="ap-topbar">
-        <div className="ap-tabs" role="tablist">
-          {(["quadras", "agenda", "responsaveis", "configuracoes"] as Tab[]).map((t) => (
+      <div className="ap-topbar no-print">
+        <div className="ap-tabs no-print" role="tablist">
+          {(["quadras", "agenda", "diario", "responsaveis", "configuracoes"] as Tab[]).map((t) => (
             <button
               key={t}
               role="tab"
@@ -217,6 +218,7 @@ export default function AdminPanel() {
             >
               {t === "quadras" ? `Quadras (${courts.length})`
                : t === "agenda" ? `Agenda (${blocks.length})`
+               : t === "diario" ? "Diário"
                : t === "responsaveis" ? `Responsáveis (${managers.length})`
                : "Configurações"}
             </button>
@@ -226,7 +228,7 @@ export default function AdminPanel() {
         <button
           id={tab === "quadras" ? "btn-nova-quadra" : tab === "agenda" ? "btn-nova-trava" : tab === "responsaveis" ? "btn-novo-responsavel" : "btn-sem-acao"}
           className="ap-primary-btn"
-          style={{ visibility: tab === "configuracoes" ? "hidden" : "visible" }}
+          style={{ visibility: (tab === "configuracoes" || tab === "diario") ? "hidden" : "visible" }}
           onClick={() =>
             tab === "quadras"
               ? setCourtModal({ open: true })
@@ -321,6 +323,13 @@ export default function AdminPanel() {
             onEdit={(b) => setBlockModal({ open: true, block: b })}
             onDelete={deleteBlock}
           />
+        </section>
+      )}
+
+      {/* ── ABA: Diário ── */}
+      {tab === "diario" && (
+        <section role="tabpanel" aria-labelledby="tab-diario">
+          <DiaryView courts={courts} />
         </section>
       )}
 
