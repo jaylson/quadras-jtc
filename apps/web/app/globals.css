@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────────────────────────────────
+   JTC Design System – Tokens
+   Fontes: DM Serif Display (headings) + DM Sans (corpo)  [RNF-01]
+   Paleta: verdes institucionais #1B4332 / #2D6A4F / #40916C
+   ───────────────────────────────────────── */
+
+@theme inline {
+  /* Fontes JTC */
+  --font-sans:    var(--font-dm-sans);
+  --font-heading: var(--font-dm-serif);
+  --font-mono:    var(--font-geist-mono);
+
+  /* Mapeamento Tailwind → CSS vars shadcn */
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+  --color-card:        var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover:     var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:     var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:   var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:       var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent:      var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border:      var(--border);
+  --color-input:       var(--input);
+  --color-ring:        var(--ring);
+
+  /* Raios */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  /* Cores JTC – Superfícies de quadra */
+  --color-saibro: #c4753b;
+  --color-hard:   #3b82c4;
+  --color-grama:  #4ade80;
+
+  /* Cores JTC – Categorias de trava */
+  --color-cat-aula:       #3b82f6;
+  --color-cat-campeonato: #7c3aed;
+  --color-cat-evento:     #f59e0b;
+  --color-cat-manutencao: #6b7280;
+  --color-cat-outro:      #0d9488;
+
+  /* Status de quadra */
+  --color-status-em-uso:      #ef4444;
+  --color-status-livre:       #22c55e;
+  --color-status-chuva:       #f97316;
+  --color-status-manutencao:  #6b7280;
+}
+
+/* ─── Tokens shadcn/ui sobrescritos com identidade JTC ─── */
+:root {
+  /* Verde JTC #1B4332 em oklch ≈ oklch(0.29 0.09 162) */
+  --primary:            oklch(0.29 0.09 162);
+  --primary-foreground: oklch(0.985 0 0);
+
+  --background:         oklch(1 0 0);
+  --foreground:         oklch(0.145 0 0);
+  --card:               oklch(1 0 0);
+  --card-foreground:    oklch(0.145 0 0);
+  --popover:            oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --secondary:          oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted:              oklch(0.97 0 0);
+  --muted-foreground:   oklch(0.556 0 0);
+  --accent:             oklch(0.93 0.04 162);   /* verde claro institucional */
+  --accent-foreground:  oklch(0.29 0.09 162);
+  --destructive:        oklch(0.577 0.245 27.325);
+  --border:             oklch(0.922 0 0);
+  --input:              oklch(0.922 0 0);
+  --ring:               oklch(0.29 0.09 162);
+  --radius:             0.75rem;               /* 12px – RNF-01 */
+}
+
+/* ─── Utilitários JTC ─── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-heading), serif;
+  }
+}
+
+/* ─── Animações globais JTC ─── */
+@layer utilities {
+  /* Entrada suave para cards e modais (RNF-03) */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.3s ease forwards;
+  }
+
+  /* Dot pulsante para status ao vivo (TV + Totem) */
+  .animate-pulse-dot {
+    animation: pulseDot 1.5s ease-in-out infinite;
+  }
+
+  /* Entrada de linha da tabela TV (RF-37) */
+  .animate-row-in {
+    animation: fadeInRow 0.3s ease forwards;
+  }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+@keyframes fadeInRow {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
