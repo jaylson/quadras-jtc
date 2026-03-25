@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import type { Court, AdminBlock } from "@/lib/db/schema"
+import type { Court, AdminBlock, Manager } from "@/lib/db/schema"
 import { getCategoryConfig } from "@/lib/utils/blocks"
 import CourtCard from "@/components/admin/CourtCard"
 import CourtModal from "@/components/admin/CourtModal"
 import BlockModal from "@/components/admin/BlockModal"
 import WeeklyCalendar from "@/components/admin/WeeklyCalendar"
 import UpcomingBlocks from "@/components/admin/UpcomingBlocks"
+import ManagerModal from "@/components/admin/ManagerModal"
 
 type CourtStatus = {
   court: Court
@@ -15,19 +16,21 @@ type CourtStatus = {
   remainingMinutes: number | null
 }
 
-type Tab = "quadras" | "agenda"
+type Tab = "quadras" | "agenda" | "responsaveis"
 
 export default function AdminPanel() {
   const [tab, setTab]               = useState<Tab>("quadras")
   const [courts, setCourts]         = useState<Court[]>([])
   const [blocks, setBlocks]         = useState<AdminBlock[]>([])
   const [statuses, setStatuses]     = useState<CourtStatus[]>([])
+  const [managers, setManagers]     = useState<Manager[]>([])
   const [rainMode, setRainMode]     = useState(false)
   const [loading, setLoading]       = useState(true)
 
   // Modais
-  const [courtModal, setCourtModal] = useState<{ open: boolean; court?: Court }>({ open: false })
-  const [blockModal, setBlockModal] = useState<{ open: boolean; block?: AdminBlock }>({ open: false })
+  const [courtModal,   setCourtModal]   = useState<{ open: boolean; court?: Court }>({ open: false })
+  const [blockModal,   setBlockModal]   = useState<{ open: boolean; block?: AdminBlock }>({ open: false })
+  const [managerModal, setManagerModal] = useState<{ open: boolean; manager?: Manager }>({ open: false })
 
   // Semana atual para o calendário
   const [weekOffset, setWeekOffset] = useState(0)
@@ -62,10 +65,16 @@ export default function AdminPanel() {
     setBlocks(await res.json())
   }, [])
 
+  const fetchManagers = useCallback(async () => {
+    const res = await fetch("/api/managers")
+    setManagers(await res.json())
+  }, [])
+
   useEffect(() => {
     fetchAll()
     fetchBlocks()
-  }, [fetchAll, fetchBlocks])
+    fetchManagers()
+  }, [fetchAll, fetchBlocks, fetchManagers])
 
   /* ── Estatísticas (RF-05) ── */
   const totalActive      = courts.filter((c) => c.active).length
@@ -93,6 +102,16 @@ export default function AdminPanel() {
   async function deleteBlock(id: number) {
     await fetch(`/api/blocks/${id}`, { method: "DELETE" })
     fetchBlocks()
+  }
+
+  async function toggleManager(id: number) {
+    await fetch(`/api/managers/${id}`, { method: "PATCH" })
+    fetchManagers()
+  }
+
+  async function deleteManager(id: number) {
+    await fetch(`/api/managers/${id}`, { method: "DELETE" })
+    fetchManagers()
   }
 
   /* ── Salvar quadra ── */
@@ -133,6 +152,25 @@ export default function AdminPanel() {
     fetchBlocks()
   }
 
+  /* ── Salvar responsável ── */
+  async function saveManager(data: Partial<Manager>) {
+    if (managerModal.manager) {
+      await fetch(`/api/managers/${managerModal.manager.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+    } else {
+      await fetch("/api/managers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+    }
+    setManagerModal({ open: false })
+    fetchManagers()
+  }
+
   if (loading) {
     return (
       <div className="ap-loading">
@@ -148,7 +186,7 @@ export default function AdminPanel() {
       {/* ── Top Bar: abas + botão primário (RF-11) ── */}
       <div className="ap-topbar">
         <div className="ap-tabs" role="tablist">
-          {(["quadras", "agenda"] as Tab[]).map((t) => (
+          {(["quadras", "agenda", "responsaveis"] as Tab[]).map((t) => (
             <button
               key={t}
               role="tab"
@@ -157,21 +195,25 @@ export default function AdminPanel() {
               onClick={() => setTab(t)}
               className={`ap-tab ${tab === t ? "ap-tab--active" : ""}`}
             >
-              {t === "quadras" ? `Quadras (${courts.length})` : `Agenda (${blocks.length})`}
+              {t === "quadras" ? `Quadras (${courts.length})`
+               : t === "agenda" ? `Agenda (${blocks.length})`
+               : `Responsáveis (${managers.length})`}
             </button>
           ))}
         </div>
 
         <button
-          id={tab === "quadras" ? "btn-nova-quadra" : "btn-nova-trava"}
+          id={tab === "quadras" ? "btn-nova-quadra" : tab === "agenda" ? "btn-nova-trava" : "btn-novo-responsavel"}
           className="ap-primary-btn"
           onClick={() =>
             tab === "quadras"
               ? setCourtModal({ open: true })
-              : setBlockModal({ open: true })
+              : tab === "agenda"
+              ? setBlockModal({ open: true })
+              : setManagerModal({ open: true })
           }
         >
-          {tab === "quadras" ? "+ Nova Quadra" : "+ Nova Trava"}
+          {tab === "quadras" ? "+ Nova Quadra" : tab === "agenda" ? "+ Nova Trava" : "+ Novo Responsável"}
         </button>
       </div>
 
@@ -260,6 +302,80 @@ export default function AdminPanel() {
         </section>
       )}
 
+      {/* ── ABA: Responsáveis ── */}
+      {tab === "responsaveis" && (
+        <section role="tabpanel" aria-labelledby="tab-responsaveis">
+          {managers.length === 0 && (
+            <p className="ap-empty" style={{ marginTop: "2rem" }}>Nenhum responsável cadastrado.</p>
+          )}
+          <div className="ap-managers-grid">
+            {managers.map((mgr) => {
+              const SHIFT_META: Record<string, { label: string; icon: string; fds: boolean }> = {
+                "manha-seg": { label: "Manhã Seg–Sex",  icon: "🌅", fds: false },
+                "tarde-seg": { label: "Tarde Seg–Sex",  icon: "☀️", fds: false },
+                "noite-seg": { label: "Noite Seg–Sex",  icon: "🌙", fds: false },
+                "manha-fds": { label: "Manhã Sáb–Dom",  icon: "🌅", fds: true  },
+                "tarde-fds": { label: "Tarde Sáb–Dom",  icon: "☀️", fds: true  },
+                "noite-fds": { label: "Noite Sáb–Dom",  icon: "🌙", fds: true  },
+              }
+              const shifts = mgr.shifts ?? []
+              return (
+                <div key={mgr.id} className={`ap-mgr-card ${!mgr.active ? "ap-mgr-card--inactive" : ""}`}>
+                  <div className="ap-mgr-top">
+                    <div className="ap-mgr-avatar">
+                      {mgr.name.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase()}
+                    </div>
+                    <div className="ap-mgr-info">
+                      <span className="ap-mgr-name">{mgr.name}</span>
+                      <a className="ap-mgr-phone" href={`tel:${mgr.phone.replace(/\D/g,"")}`}>{mgr.phone}</a>
+                    </div>
+                    <span className={`ap-mgr-badge ${mgr.active ? "ap-mgr-badge--active" : "ap-mgr-badge--off"}`}>
+                      {mgr.active ? "Ativo" : "Inativo"}
+                    </span>
+                  </div>
+                  <div className="ap-mgr-shifts">
+                    {shifts.length === 0
+                      ? <span className="ap-mgr-no-shift">Nenhum turno definido</span>
+                      : shifts.map((s) => {
+                          const m = SHIFT_META[s]
+                          if (!m) return null
+                          return (
+                            <span key={s} className={`ap-mgr-chip ${m.fds ? "ap-mgr-chip--fds" : "ap-mgr-chip--seg"}`}>
+                              {m.icon} {m.label}
+                            </span>
+                          )
+                        })
+                    }
+                  </div>
+
+                  <div className="ap-mgr-actions">
+                    <button
+                      className="ap-mgr-btn ap-mgr-btn--toggle"
+                      onClick={() => toggleManager(mgr.id)}
+                    >
+                      {mgr.active ? "Desativar" : "Ativar"}
+                    </button>
+                    <button
+                      className="ap-mgr-btn ap-mgr-btn--edit"
+                      onClick={() => setManagerModal({ open: true, manager: mgr })}
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button
+                      className="ap-mgr-btn ap-mgr-btn--delete"
+                      title="Excluir"
+                      onClick={() => { if (confirm(`Excluir ${mgr.name}?`)) deleteManager(mgr.id) }}
+                    >
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Modais ── */}
       {courtModal.open && (
         <CourtModal
@@ -279,6 +395,14 @@ export default function AdminPanel() {
         />
       )}
 
+      {managerModal.open && (
+        <ManagerModal
+          manager={managerModal.manager}
+          onSave={saveManager}
+          onClose={() => setManagerModal({ open: false })}
+        />
+      )}
+
       <style>{`
         .ap-loading {
           display: flex; align-items: center; gap: 0.75rem;
@@ -292,7 +416,7 @@ export default function AdminPanel() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .ap-root { display: flex; flex-direction: column; gap: 1.25rem; }
+        .ap-root { display: flex; flex-direction: column; gap: 1.5rem; }
 
         /* ── Topbar ── */
         .ap-topbar {
@@ -349,6 +473,7 @@ export default function AdminPanel() {
           gap: 1rem; padding: 0.875rem 1.25rem;
           background: #fff; border: 1.5px solid #e5e7eb; border-radius: 14px;
           transition: border-color 0.2s, background 0.2s;
+          margin-top: 0.75rem;
         }
         .ap-rain-bar--active { background: #fff7ed; border-color: #fed7aa; }
         .ap-rain-info { display: flex; align-items: center; gap: 0.75rem; }
@@ -376,8 +501,66 @@ export default function AdminPanel() {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: 1rem;
+          margin-top: 0.75rem;
         }
         .ap-empty { color: #9ca3af; text-align: center; padding: 2rem; grid-column: 1/-1; }
+
+        /* ── Manager Cards ── */
+        .ap-managers-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        .ap-mgr-card {
+          background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+          padding: 1.125rem 1.25rem; display: flex; flex-direction: column; gap: 0.875rem;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: opacity 0.2s;
+        }
+        .ap-mgr-card--inactive { opacity: 0.6; }
+        .ap-mgr-top { display: flex; align-items: center; gap: 0.875rem; }
+        .ap-mgr-avatar {
+          width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+          background: #1B4332; color: #fff;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em;
+        }
+        .ap-mgr-info { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+        .ap-mgr-name { font-size: 0.9rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ap-mgr-phone { font-size: 0.78rem; color: #6b7280; text-decoration: none; }
+        .ap-mgr-phone:hover { color: #1B4332; text-decoration: underline; }
+        .ap-mgr-badge {
+          font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.55rem;
+          border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+        }
+        .ap-mgr-badge--active { background: #dcfce7; color: #15803d; }
+        .ap-mgr-badge--off    { background: #f3f4f6; color: #9ca3af; }
+
+        /* Turnos: chips */
+        .ap-mgr-shifts {
+          display: flex; flex-wrap: wrap; gap: 0.4rem;
+        }
+        .ap-mgr-chip {
+          display: inline-flex; align-items: center; gap: 0.3rem;
+          font-size: 0.72rem; font-weight: 500; padding: 0.25rem 0.6rem;
+          border-radius: 999px; border: 1px solid;
+        }
+        .ap-mgr-chip--seg { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .ap-mgr-chip--fds { background: #fdf4ff; border-color: #e9d5ff; color: #7c3aed; }
+        .ap-mgr-no-shift  { font-size: 0.75rem; color: #9ca3af; }
+
+        .ap-mgr-actions { display: flex; gap: 0.5rem; border-top: 1px solid #f3f4f6; padding-top: 0.75rem; }
+        .ap-mgr-btn {
+          height: 34px; padding: 0 0.875rem; border-radius: 8px;
+          font-size: 0.8rem; font-weight: 500; font-family: inherit;
+          cursor: pointer; border: 1px solid #e5e7eb; background: #fff;
+          transition: all 0.15s; color: #374151;
+        }
+        .ap-mgr-btn:hover { background: #f9fafb; }
+        .ap-mgr-btn--edit  { color: #1B4332; border-color: #86efac; }
+        .ap-mgr-btn--edit:hover { background: #f0fdf4; }
+        .ap-mgr-btn--delete { color: #dc2626; border-color: #fecaca; margin-left: auto; padding: 0 0.7rem; }
+        .ap-mgr-btn--delete:hover { background: #fef2f2; }
       `}</style>
     </div>
   )

@@ -9,14 +9,16 @@ import { mockCourts }       from "@/lib/mock/courts"
 import { mockBlocks }       from "@/lib/mock/blocks"
 import { mockReservations } from "@/lib/mock/reservations"
 import { mockSettings }     from "@/lib/mock/settings"
-import type { Court, AdminBlock, Reservation } from "@/lib/db/schema"
+import { mockManagers }     from "@/lib/mock/managers"
+import type { Court, AdminBlock, Reservation, Manager } from "@/lib/db/schema"
 
 interface Store {
   courts:       Court[]
   blocks:       AdminBlock[]
   reservations: Reservation[]
+  managers:     Manager[]
   rainMode:     boolean
-  nextId:       { courts: number; blocks: number; reservations: number }
+  nextId:       { courts: number; blocks: number; reservations: number; managers: number }
 }
 
 declare global {
@@ -29,11 +31,13 @@ function createStore(): Store {
     courts:       structuredClone(mockCourts),
     blocks:       structuredClone(mockBlocks),
     reservations: structuredClone(mockReservations),
+    managers:     structuredClone(mockManagers),
     rainMode:     mockSettings.rainMode,
     nextId: {
       courts:       mockCourts.length + 1,
       blocks:       mockBlocks.length + 1,
       reservations: mockReservations.length + 1,
+      managers:     mockManagers.length + 1,
     },
   }
 }
@@ -44,3 +48,4 @@ export function getStore(): Store {
   }
   return globalThis.__jtcStore
 }
+

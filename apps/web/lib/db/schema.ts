@@ -67,6 +67,15 @@ export const users = pgTable("users", {
   createdAt:    timestamp("created_at").defaultNow(),
 })
 
+// ─── managers ────────────────────────────────────────────────
+export const managers = pgTable("managers", {
+  id:     serial("id").primaryKey(),
+  name:   varchar("name", { length: 100 }).notNull(),
+  phone:  varchar("phone", { length: 20 }).notNull(),
+  shifts: json("shifts").$type<ManagerShift[]>().notNull().default([]),
+  active: boolean("active").notNull().default(true),
+})
+
 // ─── settings ────────────────────────────────────────────────
 export const settings = pgTable("settings", {
   key:   varchar("key", { length: 50 }).primaryKey(),
@@ -81,11 +90,25 @@ export type Player = {
   memberId?: string
 }
 
-export type Court         = typeof courts.$inferSelect
-export type NewCourt      = typeof courts.$inferInsert
-export type AdminBlock    = typeof adminBlocks.$inferSelect
-export type NewAdminBlock = typeof adminBlocks.$inferInsert
-export type Reservation   = typeof reservations.$inferSelect
+export type Court          = typeof courts.$inferSelect
+export type NewCourt       = typeof courts.$inferInsert
+export type AdminBlock     = typeof adminBlocks.$inferSelect
+export type NewAdminBlock  = typeof adminBlocks.$inferInsert
+export type Reservation    = typeof reservations.$inferSelect
 export type NewReservation = typeof reservations.$inferInsert
-export type User          = typeof users.$inferSelect
-export type Setting       = typeof settings.$inferSelect
+export type User           = typeof users.$inferSelect
+export type Setting        = typeof settings.$inferSelect
+export type Manager        = typeof managers.$inferSelect
+export type NewManager     = typeof managers.$inferInsert
+
+/**
+ * Turnos disponíveis: horário × dia da semana
+ * seg-sex = dias úteis | fds = sábado e domingo
+ */
+export type ManagerShift =
+  | "manha-seg"     // Manhã Seg–Sex  06h–12h
+  | "tarde-seg"     // Tarde Seg–Sex  12h–18h
+  | "noite-seg"     // Noite Seg–Sex  18h–00h
+  | "manha-fds"     // Manhã Sáb–Dom  06h–12h
+  | "tarde-fds"     // Tarde Sáb–Dom  12h–18h
+  | "noite-fds"     // Noite Sáb–Dom  18h–00h

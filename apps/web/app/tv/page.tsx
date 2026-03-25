@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudRain, Clock, User, CheckCircle2, AlertTriangle, Wrench } from "lucide-react";
+import { CloudRain, Clock, User, AlertTriangle, Wrench, LayoutGrid, List } from "lucide-react";
 
 // Native JS date formatting since date-fns might not be installed, wait we can use native JS
 // Actually I will just use native Intl.DateTimeFormat instead of date-fns to be safe.
@@ -11,6 +11,7 @@ export default function TVDashboard() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rainMode, setRainMode] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
 
   useEffect(() => {
     // Clock tick every second
@@ -143,127 +144,258 @@ export default function TVDashboard() {
           </div>
         </div>
         
-        <div className="flex items-center gap-4 bg-black/40 px-6 py-3 rounded-2xl border border-white/5 shadow-inner">
-          <Clock className="w-6 h-6 text-[#4ade80]" />
-          <span className="text-4xl font-mono tracking-tighter text-white font-light tabular-nums">
-            {timeString}
-          </span>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setViewMode(v => v === "list" ? "cards" : "list")} 
+            className="flex items-center justify-center w-12 h-12 bg-black/40 hover:bg-white/10 rounded-2xl border border-white/5 transition-colors shadow-inner"
+          >
+            {viewMode === "list" ? <LayoutGrid className="w-5 h-5 text-white" /> : <List className="w-5 h-5 text-white" />}
+          </button>
+          <div className="flex items-center gap-4 bg-black/40 px-6 py-3 rounded-2xl border border-white/5 shadow-inner">
+            <Clock className="w-6 h-6 text-[#4ade80]" />
+            <span className="text-4xl font-mono tracking-tighter text-white font-light tabular-nums">
+              {timeString}
+            </span>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 p-8">
-        <div className="bg-black/20 rounded-3xl border border-white/5 shadow-2xl overflow-hidden backdrop-blur-sm">
-          {/* Table Header */}
-          <div className="grid grid-cols-6 gap-4 p-6 bg-white/5 border-b border-white/5 text-xs font-bold tracking-widest text-slate-400 uppercase">
-            <div className="pl-4">Início</div>
-            <div className="col-span-2">Jogador</div>
-            <div>Quadra</div>
-            <div>Término / Tipo</div>
-            <div className="text-right pr-4">Status</div>
-          </div>
+      <main className="relative z-10 flex-1 p-8 overflow-y-auto">
+        {viewMode === "list" ? (
+          <div className="bg-black/20 rounded-3xl border border-white/5 shadow-2xl overflow-hidden backdrop-blur-sm">
+            {/* Table Header */}
+            <div className="grid grid-cols-6 gap-4 p-6 bg-white/5 border-b border-white/5 text-xs font-bold tracking-widest text-slate-400 uppercase">
+              <div className="pl-4">Início</div>
+              <div className="col-span-2">Jogador</div>
+              <div>Quadra</div>
+              <div>Término / Tipo</div>
+              <div className="text-right pr-4">Status</div>
+            </div>
 
-          {/* Table Body */}
-          <div className="p-4 flex flex-col gap-2">
+            {/* Table Body */}
+            <div className="p-4 flex flex-col gap-2">
+              {loading ? (
+                <div className="flex flex-col gap-2 animate-pulse">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-20 bg-white/5 rounded-2xl border border-white/5" />
+                  ))}
+                </div>
+              ) : (
+                data.map((row, index) => {
+                  const isEmUso = row.status === "em-uso";
+                  const res = row.activeReservation;
+
+                  let startTime = "--:--";
+                  let endTime = "--:--";
+                  let playerName = "--";
+                  let gameType = "--";
+
+                  if (res) {
+                    startTime = new Date(res.startTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                    endTime = new Date(res.endTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                    playerName = res.playerName;
+                    gameType = res.gameType === "simples" ? "Simples" : "Duplas";
+                  }
+
+                  const animDelay = `${index * 150}ms`;
+
+                  return (
+                    <div 
+                      key={row.court.id} 
+                      className="group grid grid-cols-6 gap-4 items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
+                      style={{ animationDelay: animDelay }}
+                    >
+                      {/* Início */}
+                      <div className="pl-4 text-2xl font-light tabular-nums text-white">
+                        {isEmUso ? startTime : <span className="text-slate-600">--:--</span>}
+                      </div>
+
+                      {/* Jogador */}
+                      <div className="col-span-2 flex items-center gap-4">
+                        {isEmUso ? (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                              <User className="w-5 h-5 text-slate-400" />
+                            </div>
+                            <span className="text-xl font-medium text-white truncate pr-4">{playerName}</span>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-3 opacity-40">
+                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-slate-600" />
+                            </div>
+                            <span className="text-lg text-slate-500 italic">Aguardando check-in...</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quadra */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-xl font-bold text-white">{row.court.name}</span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`w-2 h-2 rounded-full shadow-sm ${getSurfaceColor(row.court.surface)}`} />
+                            <span className="text-xs text-slate-400 capitalize">{row.court.surface}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Término / Tipo */}
+                      <div className="flex flex-col gap-1">
+                        {isEmUso ? (
+                          <>
+                            <span className="text-xl font-light text-slate-300">{endTime}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-md bg-white/10 text-slate-300 w-fit">
+                              {gameType}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-slate-600 text-lg">--</span>
+                        )}
+                      </div>
+
+                      {/* Status */}
+                      <div className="flex justify-end pr-4">
+                        {getStatusBadge(row.status, row.remainingMinutes)}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              
+              {!loading && data.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+                  <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
+                  <p className="text-xl">Nenhuma quadra encontrada no sistema.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Cards View */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {loading ? (
-              <div className="flex flex-col gap-2 animate-pulse">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-20 bg-white/5 rounded-2xl border border-white/5" />
-                ))}
+              <div className="col-span-full flex justify-center py-20">
+                <div className="animate-pulse flex gap-2">
+                  <div className="w-4 h-4 rounded-full bg-white/20"></div>
+                  <div className="w-4 h-4 rounded-full bg-white/20"></div>
+                  <div className="w-4 h-4 rounded-full bg-white/20"></div>
+                </div>
+              </div>
+            ) : data.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
+                <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
+                <p className="text-xl">Nenhuma quadra encontrada no sistema.</p>
               </div>
             ) : (
               data.map((row, index) => {
                 const isEmUso = row.status === "em-uso";
-                const isDisponivel = row.status === "disponivel";
-                const res = row.activeReservation;
-
-                let startTime = "--:--";
-                let endTime = "--:--";
-                let playerName = "--";
-                let gameType = "--";
-
-                if (res) {
-                  startTime = new Date(res.startTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-                  endTime = new Date(res.endTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-                  playerName = res.playerName;
-                  gameType = res.gameType === "simples" ? "Simples" : "Duplas";
+                const isBloqueada = row.status === "bloqueada-chuva" || row.status === "inativa";
+                
+                // Cores do card
+                let cardTheme = "bg-[#1B4332]/40 border-green-500/30"; // Default (livre)
+                let headerColor = "text-green-400";
+                
+                if (isEmUso) {
+                  // Laranja que lembra quadra de tênis
+                  cardTheme = "bg-[#c4753b]/20 border-[#c4753b]/40";
+                  headerColor = "text-[#f3a673]";
+                } else if (isBloqueada) {
+                  cardTheme = "bg-gray-800/40 border-gray-600/40";
+                  headerColor = "text-gray-400";
                 }
 
-                // Animation delay for stagger effect (RF-37)
-                const animDelay = `${index * 150}ms`;
+                const animDelay = `${index * 100}ms`;
+                const reservations = row.todayReservations || [];
 
                 return (
                   <div 
-                    key={row.court.id} 
-                    className="group grid grid-cols-6 gap-4 items-center p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
+                    key={row.court.id}
+                    className={`rounded-3xl border shadow-xl overflow-hidden backdrop-blur-md flex flex-col animate-in fade-in zoom-in-95 duration-500 fill-mode-both ${cardTheme}`}
                     style={{ animationDelay: animDelay }}
                   >
-                    {/* Início */}
-                    <div className="pl-4 text-2xl font-light tabular-nums text-white">
-                      {isEmUso ? startTime : <span className="text-slate-600">--:--</span>}
-                    </div>
-
-                    {/* Jogador */}
-                    <div className="col-span-2 flex items-center gap-4">
-                      {isEmUso ? (
-                        <>
-                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
-                            <User className="w-5 h-5 text-slate-400" />
-                          </div>
-                          <span className="text-xl font-medium text-white truncate pr-4">{playerName}</span>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-3 opacity-40">
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-slate-600" />
-                          </div>
-                          <span className="text-lg text-slate-500 italic">Aguardando check-in...</span>
+                    {/* Card Header */}
+                    <div className="p-6 border-b border-white/10 flex justify-between items-start">
+                      <div>
+                        <h2 className="text-3xl font-bold text-white mb-1">{row.court.name}</h2>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${getSurfaceColor(row.court.surface)}`} />
+                          <span className="text-sm text-slate-300 capitalize">{row.court.surface}</span>
                         </div>
-                      )}
-                    </div>
-
-                    {/* Quadra */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-xl font-bold text-white">{row.court.name}</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`w-2 h-2 rounded-full shadow-sm ${getSurfaceColor(row.court.surface)}`} />
-                          <span className="text-xs text-slate-400 capitalize">{row.court.surface}</span>
-                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        {getStatusBadge(row.status, row.remainingMinutes)}
+                        <span className={`mt-3 text-sm font-medium ${headerColor}`}>
+                          Próx. Livre: {row.nextFreeSlot || "--:--"}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Término / Tipo */}
-                    <div className="flex flex-col gap-1">
-                      {isEmUso ? (
-                        <>
-                          <span className="text-xl font-light text-slate-300">{endTime}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-md bg-white/10 text-slate-300 w-fit">
-                            {gameType}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-slate-600 text-lg">--</span>
-                      )}
-                    </div>
+                    {/* Active Match if In Use */}
+                    {isEmUso && row.activeReservation && (
+                      <div className="px-6 py-4 bg-black/20 border-b border-white/5">
+                        <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Jogando Agora</div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+                            <User className="w-5 h-5 text-slate-400" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-lg font-medium text-white">{row.activeReservation.playerName}</span>
+                            <span className="text-xs text-slate-400">
+                              {new Date(row.activeReservation.startTime).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})} - {new Date(row.activeReservation.endTime).toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Status */}
-                    <div className="flex justify-end pr-4">
-                      {getStatusBadge(row.status, row.remainingMinutes)}
+                    {/* Reservations List */}
+                    <div className="p-6 flex-1 flex flex-col gap-3 min-h-[150px] max-h-[250px] overflow-y-auto custom-scrollbar">
+                      <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">
+                        Fila de Hoje {reservations.length > 0 ? `(${reservations.length})` : ""}
+                      </div>
+                      
+                      {reservations.length === 0 ? (
+                        <div className="text-sm text-slate-500 italic mt-2">Fila vazia para hoje.</div>
+                      ) : (
+                        reservations.map((res: any) => {
+                          const start = new Date(res.startTime);
+                          const end = new Date(res.endTime);
+                          const isActive = isEmUso && row.activeReservation?.id === res.id;
+                          const isPast = end < (currentTime || new Date());
+                          
+                          return (
+                            <div 
+                              key={res.id} 
+                              className={`flex items-center justify-between p-3 rounded-xl border ${
+                                isActive ? 'bg-white/10 border-white/20' : 
+                                isPast ? 'bg-black/10 border-white/5 opacity-50' : 
+                                'bg-black/20 border-white/5'
+                              }`}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-slate-200 truncate max-w-[120px]" title={res.playerName}>
+                                  {res.playerName}
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  {res.gameType === "simples" ? "Simples" : "Duplas"}
+                                </span>
+                              </div>
+                              <div className="text-sm font-mono text-slate-300">
+                                {start.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})} - {end.toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 );
               })
             )}
-            
-            {!loading && data.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-xl">Nenhuma quadra encontrada no sistema.</p>
-              </div>
-            )}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

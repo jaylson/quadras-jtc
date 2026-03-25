@@ -6,12 +6,13 @@ interface TotemCourtCardProps {
   court: Court
   status: "em-uso" | "disponivel" | "bloqueada-chuva" | "inativa"
   remainingMinutes: number | null
-  nextSlot?: { startTime: string; endTime: string }
+  nextSlot?: { startTime: string; endTime: string; durationMinutes?: number }
   onSelect: () => void
   disabled?: boolean
+  rainMode?: boolean
 }
 
-export default function TotemCourtCard({ court, status, remainingMinutes, nextSlot, onSelect, disabled }: TotemCourtCardProps) {
+export default function TotemCourtCard({ court, status, remainingMinutes, nextSlot, onSelect, disabled, rainMode = false }: TotemCourtCardProps) {
   const isBlocked = status === "bloqueada-chuva" || status === "inativa"
   const isAvailableNow = status === "disponivel"
 
@@ -51,6 +52,7 @@ export default function TotemCourtCard({ court, status, remainingMinutes, nextSl
       <div className="tcc-surface">
         <span className="tcc-dot" style={{ background: surfColor }} />
         <span className="tcc-surf-label">{court.surface.toUpperCase()}</span>
+        <span className="tcc-usage-time">⏱ {rainMode ? court.usageMinutesRain : court.usageMinutesDry} min</span>
       </div>
 
       <div className="tcc-status-box">
@@ -101,6 +103,7 @@ export default function TotemCourtCard({ court, status, remainingMinutes, nextSl
         .tcc-surface { display: flex; align-items: center; gap: 0.4rem; }
         .tcc-dot { width: 10px; height: 10px; border-radius: 50%; }
         .tcc-surf-label { font-size: 0.75rem; font-weight: 700; color: #6b7280; letter-spacing: 0.05em; }
+        .tcc-usage-time { margin-left: auto; font-size: 0.8rem; font-weight: 600; color: #6b7280; }
 
         .tcc-status-box { margin-top: auto; padding-top: 0.5rem; }
         .tcc-status {

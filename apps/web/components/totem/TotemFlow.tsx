@@ -25,6 +25,14 @@ const GAME_TYPES = {
   duplas:  { label: "Duplas",  min: 3, max: 4, icon: "👥👥" },
 }
 
+function formatPhone(val: string) {
+  const digits = val.replace(/\D/g, "")
+  if (digits.length <= 2) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`
+}
+
 export default function TotemFlow() {
   const [loading, setLoading]     = useState(true)
   const [rainMode, setRainMode]   = useState(false)
@@ -40,7 +48,7 @@ export default function TotemFlow() {
 
   // Seleções
   const [selectedCourt, setSelectedCourt] = useState<CourtStatus | null>(null)
-  const [nextSlot, setNextSlot]           = useState<{ startTime: string; endTime: string } | null>(null)
+  const [nextSlot, setNextSlot]           = useState<{ startTime: string; endTime: string; durationMinutes?: number } | null>(null)
   const [gameCategory, setGameCategory]   = useState<"simples" | "duplas">("simples")
   const [players, setPlayers]             = useState<PlayerInput[]>([{ name: "", phone: "", document: "" }])
 
@@ -84,7 +92,7 @@ export default function TotemFlow() {
       const res = await fetch(`/api/reservations/slot?courtId=${cs.court.id}`)
       if (res.ok) {
         const slotData = await res.json()
-        setNextSlot({ startTime: slotData.startTime.slice(11, 16), endTime: slotData.endTime.slice(11, 16) })
+        setNextSlot({ startTime: slotData.startTime.slice(11, 16), endTime: slotData.endTime.slice(11, 16), durationMinutes: slotData.durationMinutes })
       }
     } finally {
       setLoading(false)
@@ -107,7 +115,11 @@ export default function TotemFlow() {
   function updatePlayer(index: number, field: keyof PlayerInput, val: string) {
     setPlayers((prev) => {
       const copy = [...prev]
-      copy[index][field] = val
+      if (field === "phone") {
+        copy[index][field] = formatPhone(val)
+      } else {
+        copy[index][field] = val
+      }
       return copy
     })
   }
@@ -118,8 +130,10 @@ export default function TotemFlow() {
 
   // Validação Etapa 3 (RN-08)
   const isFormValid = players.every((p, i) => {
-    if (i === 0) return p.name.trim() !== "" && p.phone.trim() !== ""
-    return p.name.trim() !== ""
+    const phoneDigits = p.phone.replace(/\D/g, "")
+    const isValidPhone = p.phone.trim() === "" || phoneDigits.length >= 10
+    if (i === 0) return p.name.trim() !== "" && p.phone.trim() !== "" && isValidPhone
+    return p.name.trim() !== "" && isValidPhone
   }) && players.length >= GAME_TYPES[gameCategory].min && players.length <= GAME_TYPES[gameCategory].max
 
   async function handleSubmit() {
@@ -144,7 +158,7 @@ export default function TotemFlow() {
        })
        if (!res.ok) {
          const err = await res.json()
-         alert(`Erro: ${err.error || "Falha ao reservar"}`)
+         alert(`Erro: ${err.error || "Falha ao fazer check-in"}`)
          return
        }
        setStep(4)
@@ -278,6 +292,7 @@ export default function TotemFlow() {
                       court={s.court}
                       status={s.status}
                       remainingMinutes={s.remainingMinutes}
+                      rainMode={rainMode}
                       onSelect={() => handleSelectCourt(s)}
                     />
                   ))
@@ -323,10 +338,10 @@ export default function TotemFlow() {
                 <div className="tf-left">
                   {/* F4-11 Resumo */}
                   <div className="tf-summary">
-                     <h2 className="tf-summary-title">Resumo da Reserva</h2>
+                     <h2 className="tf-summary-title">Resumo do Check-in</h2>
                      <div className="tf-summ-item"><span>Quadra:</span> <strong>{selectedCourt.court.name} ({selectedCourt.court.surface})</strong></div>
                      <div className="tf-summ-item"><span>Tipo:</span> <strong>{GAME_TYPES[gameCategory].label}</strong></div>
-                     <div className="tf-summ-item"><span>Horário:</span> <strong style={{color:"#15803d", fontSize:"1.2rem"}}>{nextSlot.startTime} – {nextSlot.endTime}</strong></div>
+                     <div className="tf-summ-item"><span>Horário:</span> <strong style={{color:"#15803d", fontSize:"1.2rem"}}>{nextSlot.startTime} – {nextSlot.endTime} (⏱ {nextSlot.durationMinutes} min)</strong></div>
                   </div>
 
                   <button
@@ -353,23 +368,40 @@ export default function TotemFlow() {
                          )}
                        </div>
                        <div className="tf-pc-body">
-                         <div className="tf-field">
-                           <label>Nome Completo {index === 0 || index > 0 ? "*" : ""}</label>
-                           <input type="text" placeholder="Ex: João Silva" value={p.name}
-                             onChange={e => updatePlayer(index, "name", e.target.value)} />
-                         </div>
-                         <div className="tf-field-row">
-                           <div className="tf-field">
-                             <label>WhatsApp {index === 0 ? "*" : "(Opcional)"}</label>
-                             <input type="tel" placeholder="(11) 99999-9999" value={p.phone}
-                               onChange={e => updatePlayer(index, "phone", e.target.value)} />
+                         {index === 0 ? (
+                           <>
+                             <div className="tf-field">
+                               <label>Nome Completo * (Responsável)</label>
+                               <input type="text" placeholder="Ex: João Silva" value={p.name}
+                                 onChange={e => updatePlayer(index, "name", e.target.value)} />
+                             </div>
+                             <div className="tf-field-row">
+                               <div className="tf-field">
+                                 <label>WhatsApp *</label>
+                                 <input type="tel" placeholder="(11) 99999-9999" value={p.phone}
+                                   onChange={e => updatePlayer(index, "phone", e.target.value)} />
+                               </div>
+                               <div className="tf-field">
+                                 <label>Carteirinha (Opcional)</label>
+                                 <input type="text" placeholder="Nº Sócio" value={p.document}
+                                   onChange={e => updatePlayer(index, "document", e.target.value)} />
+                               </div>
+                             </div>
+                           </>
+                         ) : (
+                           <div className="tf-field-row">
+                             <div className="tf-field" style={{ flex: 1.5 }}>
+                               <label>Nome Completo *</label>
+                               <input type="text" placeholder="Ex: Maria" value={p.name}
+                                 onChange={e => updatePlayer(index, "name", e.target.value)} />
+                             </div>
+                             <div className="tf-field" style={{ flex: 1 }}>
+                               <label>WhatsApp (Opcional)</label>
+                               <input type="tel" placeholder="(11) 99999-9999" value={p.phone}
+                                 onChange={e => updatePlayer(index, "phone", e.target.value)} />
+                             </div>
                            </div>
-                           <div className="tf-field">
-                             <label>Carteirinha (Opcional)</label>
-                             <input type="text" placeholder="Nº Sócio" value={p.document}
-                               onChange={e => updatePlayer(index, "document", e.target.value)} />
-                           </div>
-                         </div>
+                         )}
                        </div>
                      </div>
                    ))}
@@ -394,7 +426,7 @@ export default function TotemFlow() {
               <div className="tf-success-box">
                 <div className="tf-check-anim">✓</div>
                 <h1 className="tf-page-title">Check-in Confirmado!</h1>
-                <p className="tf-success-desc">Sua quadra já está reservada e pronta para o jogo. Tenha uma ótima partida!</p>
+                <p className="tf-success-desc">Seu check-in foi realizado e a quadra está pronta para o jogo. Tenha uma ótima partida!</p>
 
                 <div className="tf-success-details">
                   <div className="tf-sd-item"><span>Quadra:</span> <strong>{selectedCourt?.court.name}</strong></div>
@@ -486,9 +518,9 @@ export default function TotemFlow() {
         .tf-game-desc { font-size:1.2rem; color:#6b7280; margin:0; font-weight:500; }
 
         /* Etapa 3: Formulários */
-        .tf-split { display:flex; gap:3rem; margin-top:2rem; }
-        .tf-left { flex:0.4; display:flex; flex-direction:column; gap:2rem; }
-        .tf-right { flex:0.6; display:flex; flex-direction:column; gap:1.5rem; height:calc(100vh - 280px); overflow-y:auto; padding-right:1rem; }
+        .tf-split { display:flex; gap:2.5rem; margin-top:2rem; }
+        .tf-left { flex:0.4; display:flex; flex-direction:column; gap:1.5rem; }
+        .tf-right { flex:0.6; display:flex; flex-direction:column; gap:1rem; height:calc(100vh - 280px); overflow-y:auto; padding-right:1rem; }
 
         .tf-summary { background:#fff; border:2px solid #e5e7eb; border-radius:20px; padding:2rem; box-shadow:0 4px 12px rgba(0,0,0,0.03); }
         .tf-summary-title { font-family:var(--font-dm-serif,serif); font-size:1.8rem; margin:0 0 1.5rem 0; color:#111827; }
@@ -505,20 +537,20 @@ export default function TotemFlow() {
         .tf-confirm-btn:active:not(:disabled) { transform:scale(0.97); }
         .tf-warn { color:#dc2626; text-align:center; font-weight:600; font-size:1.1rem; margin-top:-1rem; }
 
-        .tf-players-title { font-family:var(--font-dm-sans,sans-serif); font-size:1.8rem; font-weight:700; margin:0 0 0.5rem 0; color:#111827; }
-        .tf-player-card { background:#fff; border:2px solid #e5e7eb; border-radius:16px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.03); }
-        .tf-pc-header { background:#f9fafb; padding:1rem 1.5rem; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; }
-        .tf-pc-badge { background:#111827; color:#fff; padding:0.4rem 1rem; border-radius:999px; font-weight:700; font-size:1rem; letter-spacing:0.03em; }
-        .tf-pc-del { background:#fee2e2; color:#dc2626; border:none; width:36px; height:36px; border-radius:50%; font-size:1.1rem; cursor:pointer; font-weight:bold; }
-        .tf-pc-body { padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; }
+        .tf-players-title { font-family:var(--font-dm-sans,sans-serif); font-size:1.8rem; font-weight:700; margin:0 0 0.5rem 0; color:#111827; flex-shrink: 0; }
+        .tf-player-card { background:#fff; border:2px solid #e5e7eb; border-radius:16px; overflow:hidden; box-shadow:0 4px 10px rgba(0,0,0,0.03); flex-shrink: 0; }
+        .tf-pc-header { background:#f9fafb; padding:0.75rem 1.25rem; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; }
+        .tf-pc-badge { background:#111827; color:#fff; padding:0.3rem 0.8rem; border-radius:999px; font-weight:700; font-size:0.95rem; letter-spacing:0.03em; }
+        .tf-pc-del { background:#fee2e2; color:#dc2626; border:none; width:32px; height:32px; border-radius:50%; font-size:1.1rem; cursor:pointer; font-weight:bold; }
+        .tf-pc-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
 
-        .tf-field { display:flex; flex-direction:column; gap:0.5rem; flex:1; }
-        .tf-field label { font-weight:600; font-size:1.1rem; color:#374151; }
-        .tf-field input { height:56px; border-radius:12px; border:2px solid #e5e7eb; padding:0 1rem; font-size:1.2rem; font-family:inherit; outline:none; transition:border 0.2s; background:#f9fafb; }
+        .tf-field { display:flex; flex-direction:column; gap:0.4rem; flex:1; }
+        .tf-field label { font-weight:600; font-size:0.95rem; color:#374151; }
+        .tf-field input { height: 44px; border-radius: 8px; border:2px solid #e5e7eb; padding:0 1rem; font-size:1.05rem; font-family:inherit; outline:none; transition:border 0.2s; background:#f9fafb; }
         .tf-field input:focus { border-color:#1B4332; background:#fff; }
-        .tf-field-row { display:flex; gap:1.5rem; }
+        .tf-field-row { display:flex; gap:1rem; }
 
-        .tf-add-player { border:3px dashed #cbd5e1; border-radius:16px; background:transparent; height:80px; font-size:1.3rem; font-weight:700; color:#64748b; font-family:inherit; cursor:pointer; transition:all 0.2s; }
+        .tf-add-player { border:2px dashed #cbd5e1; border-radius:12px; background:transparent; height: 56px; font-size: 1.1rem; font-weight:700; color:#64748b; font-family:inherit; cursor:pointer; transition:all 0.2s; flex-shrink: 0; }
         .tf-add-player:hover { border-color:#94a3b8; color:#475569; background:#f8fafc; }
 
         /* Etapa 4: Sucesso */
@@ -532,6 +564,20 @@ export default function TotemFlow() {
         .tf-sd-item strong { color:#111827; }
         .tf-restart-btn { height:80px; width:100%; background:#1B4332; color:#fff; border-radius:20px; font-size:1.6rem; font-weight:700; border:none; cursor:pointer; box-shadow:0 12px 24px rgba(27,67,50,0.2); transition:transform 0.1s; }
         .tf-restart-btn:active { transform:scale(0.97); }
+
+        /* Responsividade */
+        @media (max-width: 1024px) {
+          .tf-split { flex-direction: column; gap: 2rem; }
+          .tf-right { height: auto; overflow: visible; padding-right: 0; }
+          .tf-game-cards { flex-direction: column; gap: 1rem; }
+          .tf-controls { flex-direction: column; align-items: stretch; }
+          .tf-search { width: 100%; max-width: none; }
+          .tf-header { padding: 1rem; flex-wrap: wrap; height: auto; justify-content: center; gap: 1rem; }
+          .tf-stepper { flex-wrap: wrap; justify-content: center; }
+          .tf-main { padding: 1.5rem 1rem; }
+          .tf-success-box { padding: 2rem 1.5rem; }
+          .tf-field-row { flex-direction: column; gap: 1rem; }
+        }
       `}</style>
     </div>
   )

@@ -161,10 +161,10 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
         @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
         .modal-box {
-          background: #fff; border-radius: 20px; width: 100%; max-width: 560px;
+          background: #fff; border-radius: 20px; width: 100%; max-width: 640px;
           box-shadow: 0 24px 80px rgba(0,0,0,0.3);
           animation: slideUp 0.2s ease;
-          max-height: 90vh; overflow-y: auto;
+          max-height: 92vh; overflow-y: auto;
         }
         @keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
 
@@ -183,7 +183,7 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
         }
         .modal-close:hover { background: #e5e7eb; color: #111827; }
 
-        .modal-form { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+        .modal-form { padding: 1.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; }
         .modal-error {
           font-size: 0.85rem; color: #dc2626;
           background: #fef2f2; border: 1px solid #fecaca;
@@ -204,8 +204,8 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
         }
         .mf-input:focus { border-color: #1B4332; box-shadow: 0 0 0 3px rgba(27,67,50,0.1); background:#fff; }
 
-        .mf-row { display: flex; gap: 0.75rem; }
-        .mf-row--3 > .mf-group { flex: 1; }
+        .mf-row { display: flex; gap: 1rem; }
+        .mf-row--3 > .mf-group { flex: 1; min-width: 120px; }
 
         .mf-options { display: flex; gap: 0.4rem; flex-wrap: wrap; }
         .mf-option {
