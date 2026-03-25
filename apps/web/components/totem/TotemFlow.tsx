@@ -149,7 +149,7 @@ export default function TotemFlow() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
            courtId: selectedCourt.court.id,
-           category: gameCategory,
+           gameType: gameCategory,
            // Formatamos local p isolar fuso, simplificado p Totem
            startTime: `${today}T${nextSlot.startTime}:00.000Z`,
            endTime: `${today}T${nextSlot.endTime}:00.000Z`,

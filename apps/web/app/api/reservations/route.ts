@@ -58,7 +58,13 @@ export async function POST(req: Request) {
     const body = await req.json() as {
       courtId:  number
       gameType: "simples" | "duplas"
+      category?: "simples" | "duplas" // Alias para Legado/Totem
       players:  Player[]
+    }
+
+    const gameType = body.gameType || body.category
+    if (!gameType) {
+      return NextResponse.json({ error: "O tipo de jogo (gameType) é obrigatório" }, { status: 400 })
     }
 
     const [court] = await db.select().from(courts).where(eq(courts.id, body.courtId)).limit(1)
@@ -94,10 +100,10 @@ export async function POST(req: Request) {
 
     // Validar jogadores
     const players: Player[] = body.players ?? []
-    if (body.gameType === "simples" && players.length !== 2) {
+    if (gameType === "simples" && players.length !== 2) {
       return NextResponse.json({ error: "Simples exige exatamente 2 jogadores" }, { status: 400 })
     }
-    if (body.gameType === "duplas" && (players.length < 3 || players.length > 4)) {
+    if (gameType === "duplas" && (players.length < 3 || players.length > 4)) {
       return NextResponse.json({ error: "Duplas exige 3 ou 4 jogadores" }, { status: 400 })
     }
     if (!players[0]?.name?.trim() || !players[0]?.phone?.trim()) {
@@ -128,7 +134,7 @@ export async function POST(req: Request) {
         playerName:  players.map((p) => p.name).join(", "),
         playerPhone: players[0].phone!,
         players,
-        gameType:    body.gameType,
+        gameType:    gameType,
         startTime,
         endTime,
         status,
