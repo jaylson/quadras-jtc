@@ -55,8 +55,12 @@ export function getNextAvailableSlot(
   let slotStart: Date
 
   if (courtReservations.length > 0) {
-    const lastEnd = new Date(courtReservations[0].endTime)
-    slotStart = new Date(lastEnd.getTime() + court.intervalMinutes * 60 * 1000)
+    const lastRes = courtReservations[0]
+    const lastEnd = new Date(lastRes.endTime)
+    // Se a última reserva já for uma "Preparação", não adicionamos o intervalo novamente
+    const isPrep = lastRes.playerName.includes("Preparação")
+    const gap = isPrep ? 0 : court.intervalMinutes
+    slotStart = new Date(lastEnd.getTime() + gap * 60 * 1000)
     if (slotStart < now) {
       slotStart = now
     }

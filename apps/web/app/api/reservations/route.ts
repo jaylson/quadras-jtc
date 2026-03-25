@@ -141,6 +141,27 @@ export async function POST(req: Request) {
       })
       .returning()
 
+    /** F2-20 – Reserva de Preparação Automática (RN-11) */
+    if (court.intervalMinutes > 0) {
+      const prepEndTime = new Date(endTime.getTime() + court.intervalMinutes * 60_000)
+      const prepStatus  = endTime <= now ? "em uso" : "agendada"
+      
+      // Gerar um telefone aleatório formatado (XX) 9XXXX-XXXX
+      const randomPhone = `(11) 9${Math.floor(1000 + Math.random() * 8999)}-${Math.floor(1000 + Math.random() * 8999)}`
+
+      await db.insert(reservations).values({
+        courtId:     body.courtId,
+        courtName:   court.name,
+        playerName:  "Preparação",
+        playerPhone: randomPhone,
+        players:     [{ name: "Preparação", phone: randomPhone }, { name: "Preparação" }],
+        gameType:    "simples",
+        startTime:   endTime,
+        endTime:     prepEndTime,
+        status:      prepStatus,
+      })
+    }
+
     return NextResponse.json(newReservation, { status: 201 })
   } catch (e) {
     console.error("Erro ao criar reserva:", e)
