@@ -437,8 +437,8 @@ export default function TVDashboard() {
             <div className="grid grid-cols-12 gap-1 p-3 bg-[#1A1F26] text-[#A0A0A0] text-xs font-bold uppercase border-b-2 border-black tracking-widest">
               <div className="col-span-2 pl-4">Quadra</div>
               <div className="col-span-6">Tenistas</div>
-              <div className="col-span-1 text-center">Partida</div>
-              <div className="col-span-1 text-center">Estimado</div>
+              <div className="col-span-1 text-center">Início</div>
+              <div className="col-span-1 text-center">Fim</div>
               <div className="col-span-2 text-right pr-4">Observações</div>
             </div>
 
@@ -466,13 +466,13 @@ export default function TVDashboard() {
                   return end > (currentTime?.getTime() || Date.now());
                 });
 
-                // Ordenar pela hora fim e quadra (conforme pedido pelo usuário)
+                // Ordenar por quadra e hora início
                 allItems.sort((a, b) => {
-                  const endA = a.type === 'reserva' ? new Date(a.endTime).getTime() : new Date(`${a.date}T${a.endTime}`).getTime();
-                  const endB = b.type === 'reserva' ? new Date(b.endTime).getTime() : new Date(`${b.date}T${b.endTime}`).getTime();
-                  
-                  if (endA !== endB) return endA - endB;
-                  return a.courtName.localeCompare(b.courtName);
+                  const nameCompare = a.courtName.localeCompare(b.courtName);
+                  if (nameCompare !== 0) return nameCompare;
+                  const startA = a.type === 'reserva' ? new Date(a.startTime).getTime() : new Date(`${a.date}T${a.startTime}`).getTime();
+                  const startB = b.type === 'reserva' ? new Date(b.startTime).getTime() : new Date(`${b.date}T${b.startTime}`).getTime();
+                  return startA - startB;
                 });
 
                 if (allItems.length === 0) {
@@ -502,7 +502,7 @@ export default function TVDashboard() {
                     statusText = "FINALIZADO";
                     statusColor = "text-slate-600";
                   } else if (itemStart - now < 15 * 60 * 1000) {
-                    statusText = "EMBARQUE";
+                    statusText = "PRÓXIMO";
                     statusColor = "text-blue-400";
                   }
 
