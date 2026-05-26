@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { Court, Reservation, AdminBlock } from "@/lib/db/schema"
 import { getCourtStatus, getRemainingMinutes } from "@/lib/utils/courts"
+import { hasDatabaseUrl } from "@/lib/env"
 
 /**
  * F2-18 – Status em tempo real de todas as quadras (para TV e Totem).
@@ -160,14 +161,14 @@ export async function GET() {
   const dateStr = now.toISOString().slice(0, 10)
 
   // Sem banco configurado, retorna dados mockados para facilitar o desenvolvimento
-  if (!process.env.DATABASE_URL) {
+  if (!hasDatabaseUrl()) {
     return NextResponse.json(buildMockStatus(now, dateStr))
   }
 
   try {
     // Imports dinâmicos intencionais: lib/db dispara erro em nível de módulo quando
-    // DATABASE_URL não está definida, então não pode ser importado estaticamente.
-    // O guard acima garante que chegamos aqui apenas quando DATABASE_URL está presente.
+    // não há URL de banco definida, então não pode ser importado estaticamente.
+    // O guard acima garante que chegamos aqui apenas quando existe URL de banco configurada.
     const { db } = await import("@/lib/db")
     const { courts, reservations, adminBlocks, settings } = await import("@/lib/db/schema")
     const { and, gte, lte, eq, or } = await import("drizzle-orm")

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { adminBlocks } from "@/lib/db/schema"
-import { and, gte, lte, eq } from "drizzle-orm"
+import { getStore } from "@/lib/data/store"
+import { and, gte, lte } from "drizzle-orm"
 import type { NewAdminBlock } from "@/lib/db/schema"
+import { hasDatabaseUrl } from "@/lib/env"
 
 /** F2-06 – Listar travas com filtro de período opcional */
 export async function GET(req: Request) {
@@ -11,13 +11,21 @@ export async function GET(req: Request) {
   const to   = searchParams.get("to")     // YYYY-MM-DD
 
   const where = []
-  if (from) where.push(gte(adminBlocks.date, from))
-  if (to)   where.push(lte(adminBlocks.date, to))
+  let blocks: Awaited<ReturnType<typeof getBlocksFromStore>>
 
-  const blocks = await db
-    .select()
-    .from(adminBlocks)
-    .where(where.length > 0 ? and(...where) : undefined)
+  if (!hasDatabaseUrl()) {
+    blocks = getBlocksFromStore(from, to)
+  } else {
+    const { db } = await import("@/lib/db")
+    const { adminBlocks } = await import("@/lib/db/schema")
+    if (from) where.push(gte(adminBlocks.date, from))
+    if (to)   where.push(lte(adminBlocks.date, to))
+
+    blocks = await db
+      .select()
+      .from(adminBlocks)
+      .where(where.length > 0 ? and(...where) : undefined)
+  }
 
   // Expandir recorrências semanais para o período solicitado (lógica de apresentação)
   if (from && to) {
@@ -50,6 +58,16 @@ export async function GET(req: Request) {
   return NextResponse.json(blocks)
 }
 
+function getBlocksFromStore(from: string | null, to: string | null) {
+  const store = getStore()
+  const blocks = store.blocks.filter((block) => {
+    if (from && block.date < from) return false
+    if (to && block.date > to) return false
+    return true
+  })
+  return blocks
+}
+
 /** F2-07 – Criar nova trava */
 export async function POST(req: Request) {
   try {
@@ -65,6 +83,26 @@ export async function POST(req: Request) {
     if (!body.date || !body.startTime || !body.endTime) {
       return NextResponse.json({ error: "Data e horários são obrigatórios" }, { status: 400 })
     }
+
+    if (!hasDatabaseUrl()) {
+      const store = getStore()
+      const newBlock = {
+        id: store.nextId.blocks++,
+        title: body.title.trim(),
+        category: body.category ?? "outro",
+        courtIds: body.courtIds,
+        date: body.date,
+        startTime: body.startTime,
+        endTime: body.endTime,
+        recurring: body.recurring ?? "nenhuma",
+        notes: body.notes ?? null,
+      }
+      store.blocks.push(newBlock)
+      return NextResponse.json(newBlock, { status: 201 })
+    }
+
+    const { db } = await import("@/lib/db")
+    const { adminBlocks } = await import("@/lib/db/schema")
 
     const [newBlock] = await db
       .insert(adminBlocks)

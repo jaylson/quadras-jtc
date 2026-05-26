@@ -1,13 +1,29 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { settings } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { getStore } from "@/lib/data/store"
+import { hasDatabaseUrl } from "@/lib/env"
 
 /**
  * F2-16 – Alternar modo chuva.
  */
 export async function PATCH(req: Request) {
   try {
+    if (!hasDatabaseUrl()) {
+      const store = getStore()
+
+      try {
+        const body = await req.json() as { rainMode?: boolean }
+        store.rainMode = body.rainMode !== undefined ? body.rainMode : !store.rainMode
+      } catch {
+        store.rainMode = !store.rainMode
+      }
+
+      return NextResponse.json({ rainMode: store.rainMode })
+    }
+
+    const { db } = await import("@/lib/db")
+    const { settings } = await import("@/lib/db/schema")
+    const { eq } = await import("drizzle-orm")
+
     const [currentSetting] = await db
       .select({ value: settings.value })
       .from(settings)

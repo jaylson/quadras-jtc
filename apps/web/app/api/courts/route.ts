@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { courts } from "@/lib/db/schema"
+import { getStore } from "@/lib/data/store"
 import type { NewCourt } from "@/lib/db/schema"
-import { eq } from "drizzle-orm"
+import { hasDatabaseUrl } from "@/lib/env"
 
 /** F2-01 – Listar todas as quadras */
 export async function GET() {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(getStore().courts)
+  }
+
+  const { db } = await import("@/lib/db")
+  const { courts } = await import("@/lib/db/schema")
   const allCourts = await db.select().from(courts)
   return NextResponse.json(allCourts)
 }
@@ -18,6 +23,27 @@ export async function POST(req: Request) {
     if (!body.name?.trim()) {
       return NextResponse.json({ error: "Nome da quadra é obrigatório" }, { status: 400 })
     }
+
+    if (!hasDatabaseUrl()) {
+      const store = getStore()
+      const newCourt = {
+        id: store.nextId.courts++,
+        name: body.name.trim(),
+        type: body.type,
+        surface: body.surface,
+        active: body.active ?? true,
+        deactivateStart: body.deactivateStart ?? null,
+        deactivateEnd: body.deactivateEnd ?? null,
+        usageMinutesDry: body.usageMinutesDry ?? 60,
+        usageMinutesRain: body.usageMinutesRain ?? 60,
+        intervalMinutes: body.intervalMinutes ?? 15,
+      }
+      store.courts.push(newCourt)
+      return NextResponse.json(newCourt, { status: 201 })
+    }
+
+    const { db } = await import("@/lib/db")
+    const { courts } = await import("@/lib/db/schema")
     
     const [newCourt] = await db
       .insert(courts)

@@ -2,6 +2,7 @@
 
 import { signOut, SessionProvider } from "next-auth/react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import type { Session } from "next-auth"
 
 interface AdminShellProps {
@@ -10,6 +11,14 @@ interface AdminShellProps {
 }
 
 export default function AdminShell({ session, children }: AdminShellProps) {
+  const router = useRouter()
+
+  async function handleLogout() {
+    await signOut({ redirect: false })
+    router.replace("/admin/login")
+    router.refresh()
+  }
+
   return (
     <SessionProvider session={session} basePath="/api/auth/admin">
       <div className="admin-shell">
@@ -32,7 +41,7 @@ export default function AdminShell({ session, children }: AdminShellProps) {
             <button
               id="btn-logout"
               className="admin-logout-btn"
-              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              onClick={handleLogout}
             >
               Sair
             </button>

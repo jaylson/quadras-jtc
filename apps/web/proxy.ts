@@ -1,7 +1,7 @@
 import { adminAuth, totemAuth, tvAuth } from "@/lib/auth"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
-export default async function middleware(req: any) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // 1. ADMIN

@@ -34,21 +34,21 @@ async function main() {
     console.log("👨‍💻 Criando usuário admin...");
     await db.insert(users).values({
       username: "admin",
-      passwordHash: bcrypt.hashSync("admin123", 10),
+      passwordHash: bcrypt.hashSync("A9v!K2m#R7t@Q4xL", 10),
       role: "admin",
     });
 
     console.log("🖥️ Criando usuário totem...");
     await db.insert(users).values({
       username: "totem",
-      passwordHash: bcrypt.hashSync("totem123", 10),
+      passwordHash: bcrypt.hashSync("T8p$N5y!C3r%W6dZ", 10),
       role: "totem",
     });
 
     console.log("📺 Criando usuário tv...");
     await db.insert(users).values({
       username: "tv",
-      passwordHash: bcrypt.hashSync("tv123", 10),
+      passwordHash: bcrypt.hashSync("V4q@L9s#B2m!H7xP", 10),
       role: "tv",
     });
 

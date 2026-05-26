@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:local": "ALLOW_MISSING_AUTH_SECRET_IN_LOCAL_BUILD=true next build",
+    "build:strict": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

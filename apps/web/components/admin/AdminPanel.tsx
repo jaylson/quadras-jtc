@@ -19,6 +19,10 @@ type CourtStatus = {
 
 type Tab = "quadras" | "agenda" | "diario" | "responsaveis" | "configuracoes"
 
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
 export default function AdminPanel() {
   const [tab, setTab]               = useState<Tab>("quadras")
   const [courts, setCourts]         = useState<Court[]>([])
@@ -39,20 +43,30 @@ export default function AdminPanel() {
 
   /* ── Fetch ── */
   const fetchAll = useCallback(async () => {
-    const [courtsRes, statusRes, settingsRes] = await Promise.all([
-      fetch("/api/courts"),
-      fetch("/api/courts/status"),
-      fetch("/api/settings"),
-    ])
-    const [courtsData, statusData, settingsData] = await Promise.all([
-      courtsRes.json(),
-      statusRes.json(),
-      settingsRes.json(),
-    ])
-    setCourts(courtsData)
-    setStatuses(statusData)
-    setRainMode(settingsData.rainMode)
-    setLoading(false)
+    try {
+      const [courtsRes, statusRes, settingsRes] = await Promise.all([
+        fetch("/api/courts"),
+        fetch("/api/courts/status"),
+        fetch("/api/settings"),
+      ])
+
+      const [courtsData, statusData, settingsData] = await Promise.all([
+        courtsRes.json(),
+        statusRes.json(),
+        settingsRes.json(),
+      ])
+
+      setCourts(asArray<Court>(courtsData))
+      setStatuses(asArray<CourtStatus>(statusData))
+      setRainMode(Boolean(settingsData?.rainMode))
+    } catch (error) {
+      console.error("[AdminPanel] Erro ao carregar dados principais:", error)
+      setCourts([])
+      setStatuses([])
+      setRainMode(false)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   const fetchBlocks = useCallback(async () => {
@@ -61,15 +75,27 @@ export default function AdminPanel() {
     from.setDate(from.getDate() - 7)
     const to = new Date()
     to.setDate(to.getDate() + 60)
-    const res = await fetch(
-      `/api/blocks?from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`
-    )
-    setBlocks(await res.json())
+    try {
+      const res = await fetch(
+        `/api/blocks?from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`
+      )
+      const data = await res.json()
+      setBlocks(asArray<AdminBlock>(data))
+    } catch (error) {
+      console.error("[AdminPanel] Erro ao carregar travas:", error)
+      setBlocks([])
+    }
   }, [])
 
   const fetchManagers = useCallback(async () => {
-    const res = await fetch("/api/managers")
-    setManagers(await res.json())
+    try {
+      const res = await fetch("/api/managers")
+      const data = await res.json()
+      setManagers(asArray<Manager>(data))
+    } catch (error) {
+      console.error("[AdminPanel] Erro ao carregar responsaveis:", error)
+      setManagers([])
+    }
   }, [])
 
   const fetchAppUsers = useCallback(async () => {

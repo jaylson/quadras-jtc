@@ -14,7 +14,66 @@ pnpm dev
 bun dev
 ```
 
+If you are in the monorepo folder `apps`, you can also run:
+
+```bash
+cd /workspaces/quadras-jtc/apps
+npm run dev
+```
+
+The command above changes into `apps/web` and runs `next dev` there.
+
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Supabase
+
+Esta aplicação usa PostgreSQL via Drizzle e pode conectar diretamente no Supabase.
+
+1. Copie o arquivo de exemplo:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Preencha apenas uma URL de banco em `.env.local`:
+
+```env
+DATABASE_URL=postgresql://...
+# ou
+SUPABASE_DB_URL=postgresql://...
+```
+
+3. Rode as migrations:
+
+```bash
+npm run db:migrate
+```
+
+4. Verifique a conectividade em runtime:
+
+```bash
+curl http://localhost:3000/api/health/db
+```
+
+Respostas esperadas:
+
+- `200`: banco acessível.
+- `503` com `not-configured`: variáveis de banco ausentes.
+- `503` com `unreachable`: URL configurada, mas conexão indisponível.
+
+## Auth Secret e Build
+
+Este projeto usa Auth.js e aceita `AUTH_SECRET` (ou `NEXTAUTH_SECRET`).
+
+- Producao real: `AUTH_SECRET` e obrigatorio.
+- Build local sem secret: use `npm run build:local` para permitir fallback apenas no ambiente local.
+
+Scripts:
+
+```bash
+npm run build:strict   # exige AUTH_SECRET/NEXTAUTH_SECRET
+npm run build:local    # permite fallback local (nao usar em producao)
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

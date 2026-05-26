@@ -1,13 +1,87 @@
 import NextAuth, { NextAuthConfig } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
+import { hasDatabaseUrl } from "@/lib/env"
+
+type AuthArea = "admin" | "totem" | "tv"
+
+type DevUser = {
+  id: string
+  username: string
+  role: AuthArea
+  passwords: string[]
+}
+
+const devUsers: DevUser[] = [
+  {
+    id: "dev-admin",
+    username: "admin",
+    role: "admin",
+    passwords: ["A9v!K2m#R7t@Q4xL", "admin123"],
+  },
+  {
+    id: "dev-totem",
+    username: "totem",
+    role: "totem",
+    passwords: ["T8p$N5y!C3r%W6dZ", "totem123"],
+  },
+  {
+    id: "dev-tv",
+    username: "tv",
+    role: "tv",
+    passwords: ["V4q@L9s#B2m!H7xP", "tv123"],
+  },
+]
+
+function authenticateDevUser(username: string, password: string, area: AuthArea) {
+  if (process.env.NODE_ENV === "production") return null
+  if (hasDatabaseUrl()) return null
+
+  const user = devUsers.find((item) => item.username === username)
+  if (!user) return null
+
+  if (user.role !== area && user.role !== "admin") return null
+  if (!user.passwords.includes(password)) return null
+
+  return { id: user.id, name: user.username, role: user.role }
+}
+
+function resolveAuthSecret() {
+  const envSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+
+  if (envSecret) return envSecret
+
+  const allowLocalBuildFallback =
+    process.env.ALLOW_MISSING_AUTH_SECRET_IN_LOCAL_BUILD === "true" &&
+    !process.env.CI &&
+    !process.env.VERCEL
+
+  if (process.env.NODE_ENV === "production") {
+    if (allowLocalBuildFallback) {
+      console.warn(
+        "[auth] AUTH_SECRET ausente, usando fallback apenas para build local. Nao use em producao.",
+      )
+      return "dev-only-jtc-auth-secret-change-in-production"
+    }
+
+    throw new Error(
+      "AUTH_SECRET (ou NEXTAUTH_SECRET) nao definido em producao. Defina a variavel para deploy real, ou use ALLOW_MISSING_AUTH_SECRET_IN_LOCAL_BUILD=true apenas para build local.",
+    )
+  }
+
+  return "dev-only-jtc-auth-secret-change-in-production"
+}
+
+const authSecret = resolveAuthSecret()
 
 /**
  * Factory para criar configurações independentes de Auth para cada área.
  * Isso permite ter cookies de sessão diferentes para Admin, Totem e TV.
  */
-function createAuthOptions(area: "admin" | "totem" | "tv"): NextAuthConfig {
+function createAuthOptions(area: AuthArea): NextAuthConfig {
   return {
+    secret: authSecret,
+    trustHost: true,
     basePath: `/api/auth/${area}`,
     cookies: {
       sessionToken: {
@@ -30,20 +104,28 @@ function createAuthOptions(area: "admin" | "totem" | "tv"): NextAuthConfig {
           const { username, password } = credentials as { username: string; password: string }
           if (!username || !password) return null
 
-          const { db } = await import("./db")
-          const { users } = await import("./db/schema")
-          const { eq } = await import("drizzle-orm")
+          const devUser = authenticateDevUser(username, password, area)
+          if (devUser) return devUser
 
-          const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1)
-          if (!user) return null
+          try {
+            const { db } = await import("./db")
+            const { users } = await import("./db/schema")
+            const { eq } = await import("drizzle-orm")
 
-          // RN: Verificar se o usuário tem o papel correto para a área (ou é admin)
-          if (user.role !== area && user.role !== "admin") return null
+            const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1)
+            if (!user) return null
 
-          const valid = await compare(password, user.passwordHash)
-          if (!valid) return null
+            // RN: Verificar se o usuário tem o papel correto para a área (ou é admin)
+            if (user.role !== area && user.role !== "admin") return null
 
-          return { id: String(user.id), name: user.username, role: user.role }
+            const valid = await compare(password, user.passwordHash)
+            if (!valid) return null
+
+            return { id: String(user.id), name: user.username, role: user.role }
+          } catch (error) {
+            console.error("[auth] Falha ao autenticar usuário:", error)
+            return null
+          }
         },
       }),
     ],

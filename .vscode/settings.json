@@ -1,0 +1,13 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd /workspaces/quadras-jtc/apps/web && printenv \\| rg 'DATABASE_URL\\|AUTH_SECRET\\|NEXTAUTH_SECRET\\|NODE_ENV'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && env \\| grep -E 'DATABASE_URL\\|AUTH_SECRET\\|NEXTAUTH_SECRET\\|NODE_ENV'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    },
+    "remote.autoForwardPortsFallback": 0
+}

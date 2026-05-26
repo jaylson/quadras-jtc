@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { managers } from "@/lib/db/schema"
+import { getStore } from "@/lib/data/store"
+import { hasDatabaseUrl } from "@/lib/env"
 
 /** F1-10 – Listar todos os gerentes */
 export async function GET() {
+  if (!hasDatabaseUrl()) {
+    return NextResponse.json(getStore().managers)
+  }
+
+  const { db } = await import("@/lib/db")
+  const { managers } = await import("@/lib/db/schema")
   const allManagers = await db.select().from(managers)
   return NextResponse.json(allManagers)
 }
@@ -18,6 +24,22 @@ export async function POST(req: Request) {
     if (!body.phone?.trim()) {
       return NextResponse.json({ error: "Telefone é obrigatório" }, { status: 400 })
     }
+
+    if (!hasDatabaseUrl()) {
+      const store = getStore()
+      const newManager = {
+        id: store.nextId.managers++,
+        name: body.name.trim(),
+        phone: body.phone.trim(),
+        shifts: body.shifts || [],
+        active: true,
+      }
+      store.managers.push(newManager)
+      return NextResponse.json(newManager, { status: 201 })
+    }
+
+    const { db } = await import("@/lib/db")
+    const { managers } = await import("@/lib/db/schema")
 
     const [newManager] = await db
       .insert(managers)
