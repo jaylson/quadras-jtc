@@ -11,7 +11,8 @@ export default function TVDashboard() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rainMode, setRainMode] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "cards" | "airplane">("list");
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "cards" | "airplane">("airplane");
 
   useEffect(() => {
     // Clock tick every second
@@ -27,12 +28,26 @@ export default function TVDashboard() {
     try {
       const res = await fetch("/api/courts/status");
       const json = await res.json();
+
+      if (!Array.isArray(json)) {
+        setData([]);
+        setRainMode(false);
+        setHasLoadError(true);
+        return;
+      }
+
       setData(json);
+      setHasLoadError(false);
       if (json.length > 0) {
-        setRainMode(json[0].rainMode);
+        setRainMode(Boolean(json[0].rainMode));
+      } else {
+        setRainMode(false);
       }
     } catch (error) {
       console.error("Failed to fetch courts status:", error);
+      setData([]);
+      setRainMode(false);
+      setHasLoadError(true);
     } finally {
       if (loading) setLoading(false);
     }
@@ -287,7 +302,11 @@ export default function TVDashboard() {
               {!loading && data.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-500">
                   <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
-                  <p className="text-xl">Nenhuma quadra encontrada no sistema.</p>
+                  <p className="text-xl">
+                    {hasLoadError
+                      ? "Nao foi possivel carregar o status das quadras."
+                      : "Nenhuma quadra encontrada no sistema."}
+                  </p>
                 </div>
               )}
             </div>
@@ -306,7 +325,11 @@ export default function TVDashboard() {
             ) : data.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
                 <AlertTriangle className="w-12 h-12 mb-4 opacity-50" />
-                <p className="text-xl">Nenhuma quadra encontrada no sistema.</p>
+                <p className="text-xl">
+                  {hasLoadError
+                    ? "Nao foi possivel carregar o status das quadras."
+                    : "Nenhuma quadra encontrada no sistema."}
+                </p>
               </div>
             ) : (
               data.map((row, index) => {

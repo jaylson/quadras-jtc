@@ -9,10 +9,20 @@ export async function GET() {
     return NextResponse.json(getStore().courts)
   }
 
-  const { db } = await import("@/lib/db")
-  const { courts } = await import("@/lib/db/schema")
-  const allCourts = await db.select().from(courts)
-  return NextResponse.json(allCourts)
+  try {
+    const { db } = await import("@/lib/db")
+    const { courts } = await import("@/lib/db/schema")
+    const allCourts = await db.select().from(courts)
+    return NextResponse.json(allCourts)
+  } catch (err) {
+    console.error("Erro ao listar quadras:", err)
+
+    if (process.env.NODE_ENV !== "production") {
+      return NextResponse.json(getStore().courts)
+    }
+
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 })
+  }
 }
 
 /** F2-02 – Criar nova quadra */

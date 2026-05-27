@@ -33,9 +33,14 @@ const devUsers: DevUser[] = [
   },
 ]
 
-function authenticateDevUser(username: string, password: string, area: AuthArea) {
+function authenticateDevUser(
+  username: string,
+  password: string,
+  area: AuthArea,
+  options?: { allowWithDatabaseUrl?: boolean },
+) {
   if (process.env.NODE_ENV === "production") return null
-  if (hasDatabaseUrl()) return null
+  if (hasDatabaseUrl() && !options?.allowWithDatabaseUrl) return null
 
   const user = devUsers.find((item) => item.username === username)
   if (!user) return null
@@ -44,6 +49,15 @@ function authenticateDevUser(username: string, password: string, area: AuthArea)
   if (!user.passwords.includes(password)) return null
 
   return { id: user.id, name: user.username, role: user.role }
+}
+
+function matchesDevPassword(username: string, password: string): boolean {
+  if (process.env.NODE_ENV === "production") return false
+
+  const devUser = devUsers.find((item) => item.username === username)
+  if (!devUser) return false
+
+  return devUser.passwords.includes(password)
 }
 
 function resolveAuthSecret() {
@@ -107,23 +121,31 @@ function createAuthOptions(area: AuthArea): NextAuthConfig {
           const devUser = authenticateDevUser(username, password, area)
           if (devUser) return devUser
 
+          const devFallbackUser = () =>
+            authenticateDevUser(username, password, area, { allowWithDatabaseUrl: true })
+
           try {
             const { db } = await import("./db")
             const { users } = await import("./db/schema")
             const { eq } = await import("drizzle-orm")
 
             const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1)
-            if (!user) return null
+            if (!user) return devFallbackUser()
 
             // RN: Verificar se o usuário tem o papel correto para a área (ou é admin)
-            if (user.role !== area && user.role !== "admin") return null
+            if (user.role !== area && user.role !== "admin") return devFallbackUser()
 
             const valid = await compare(password, user.passwordHash)
-            if (!valid) return null
+            if (!valid) return devFallbackUser()
 
             return { id: String(user.id), name: user.username, role: user.role }
           } catch (error) {
             console.error("[auth] Falha ao autenticar usuário:", error)
+
+            // Em desenvolvimento, permite login local se o banco estiver indisponível.
+            const fallbackUser = devFallbackUser()
+            if (fallbackUser) return fallbackUser
+
             return null
           }
         },

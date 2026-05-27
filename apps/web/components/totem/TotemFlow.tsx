@@ -25,6 +25,19 @@ const GAME_TYPES = {
   duplas:  { label: "Duplas",  min: 3, max: 4, icon: "👥👥" },
 }
 
+async function safeJson<T>(res: Response, fallback: T): Promise<T> {
+  if (!res.ok) return fallback
+
+  const text = await res.text()
+  if (!text) return fallback
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return fallback
+  }
+}
+
 function formatPhone(val: string) {
   const digits = val.replace(/\D/g, "")
   if (digits.length <= 2) return digits
@@ -63,14 +76,16 @@ export default function TotemFlow() {
         fetch("/api/settings"),
       ])
       const [cData, sData, optData] = await Promise.all([
-        cRes.json(), sRes.json(), optRes.json(),
+        safeJson<Court[]>(cRes, []),
+        safeJson<CourtStatus[]>(sRes, []),
+        safeJson<{ rainMode?: boolean }>(optRes, { rainMode: false }),
       ])
 
       // Para a view do Totem, vamos também buscar o nextSlot de todas antecipadamente (opcional) ou não.
       // Em prol de performance, vamos usar um estado simplificado e buscar o slot exato ao selecionar.
       setCourts(cData)
       setStatuses(sData)
-      setRainMode(optData.rainMode)
+      setRainMode(Boolean(optData.rainMode))
     } finally {
       setLoading(false)
     }

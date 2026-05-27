@@ -195,6 +195,12 @@ export async function GET() {
     return NextResponse.json(buildCourtsStatus(allCourts, allReservations, allBlocks, rainMode, now, dateStr))
   } catch (err) {
     console.error("Erro no status das quadras:", err)
+
+    // Em desenvolvimento, evita quebrar o dashboard quando o banco estiver indisponivel.
+    if (process.env.NODE_ENV !== "production") {
+      return NextResponse.json(buildMockStatus(now, dateStr))
+    }
+
     return NextResponse.json({ error: "Erro interno" }, { status: 500 })
   }
 }
