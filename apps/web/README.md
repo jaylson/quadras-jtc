@@ -49,6 +49,12 @@ SUPABASE_DB_URL=postgresql://...
 npm run db:migrate
 ```
 
+Se quiser validar credenciais/conectividade antes de migrar:
+
+```bash
+npm run db:check
+```
+
 4. Verifique a conectividade em runtime:
 
 ```bash

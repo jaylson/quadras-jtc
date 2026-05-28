@@ -7,6 +7,42 @@
         "/^cd /workspaces/quadras-jtc/apps/web && env \\| grep -E 'DATABASE_URL\\|AUTH_SECRET\\|NEXTAUTH_SECRET\\|NODE_ENV'$/": {
             "approve": true,
             "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && awk -F= '/\\^\\(DATABASE_URL\\|SUPABASE_DB_URL\\|SUPABASE_DATABASE_URL\\)=/\\{print \\$1\"=\\*\\*\\*\"\\}' \\.env\\.local$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npx tsx --env-file=\\.env\\.local -e 'import postgres from \"postgres\"; \\(async \\(\\) => \\{ const url=process\\.env\\.DATABASE_URL\\|\\|process\\.env\\.SUPABASE_DB_URL\\|\\|process\\.env\\.SUPABASE_DATABASE_URL; if\\(!url\\)\\{console\\.log\\(\"NOT_CONFIGURED\"\\); process\\.exit\\(0\\)\\} const sql=postgres\\(url,\\{prepare:false,connect_timeout:5\\}\\); try\\{ await sql`select 1 as ok`; console\\.log\\(\"DB_OK\"\\); \\}catch\\{ console\\.log\\(\"DB_UNREACHABLE\"\\); \\} finally \\{ await sql\\.end\\(\\{ timeout: 1 \\}\\); \\} \\}\\)\\(\\);'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npx tsx --env-file=\\.env\\.local -e 'import postgres from \"postgres\"; \\(async \\(\\) => \\{ const raw=process\\.env\\.DATABASE_URL\\|\\|process\\.env\\.SUPABASE_DB_URL\\|\\|process\\.env\\.SUPABASE_DATABASE_URL; if\\(!raw\\)\\{console\\.log\\(\"NOT_CONFIGURED\"\\); return;\\} try \\{ const u=new URL\\(raw\\); console\\.log\\(`DB_HOST=\\$\\{u\\.hostname\\}`\\); console\\.log\\(`DB_PORT=\\$\\{u\\.port\\|\\|\"5432\"\\}`\\); console\\.log\\(`HAS_SSLMODE=\\$\\{u\\.searchParams\\.has\\(\"sslmode\"\\)\\}`\\); \\} catch \\{ console\\.log\\(\"URL_INVALID\"\\); return; \\} const sql=postgres\\(raw,\\{prepare:false,connect_timeout:8\\}\\); try\\{ await sql`select now\\(\\)`; console\\.log\\(\"DB_OK\"\\); \\}catch\\(e\\)\\{ const err=e as any; console\\.log\\(`DB_ERR_NAME=\\$\\{err\\?\\.name\\|\\|\"unknown\"\\}`\\); console\\.log\\(`DB_ERR_CODE=\\$\\{err\\?\\.code\\|\\|\"n/a\"\\}`\\); console\\.log\\(`DB_ERR_MESSAGE=\\$\\{\\(err\\?\\.message\\|\\|\"unknown\"\\)\\.split\\(\"\\\\n\"\\)\\[0\\]\\}`\\); \\} finally \\{ await sql\\.end\\(\\{ timeout: 1 \\}\\); \\} \\}\\)\\(\\);'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npx tsx --env-file=\\.env\\.local -e 'const raw=process\\.env\\.DATABASE_URL\\|\\|process\\.env\\.SUPABASE_DB_URL\\|\\|process\\.env\\.SUPABASE_DATABASE_URL; if\\(!raw\\)\\{console\\.log\\(\"NOT_CONFIGURED\"\\); process\\.exit\\(0\\)\\} try\\{const u=new URL\\(raw\\); console\\.log\\(`DB_USER=\\$\\{u\\.username\\}`\\); console\\.log\\(`DB_NAME=\\$\\{u\\.pathname\\.replace\\(/\\^\\\\//,\"\"\\)\\}`\\); console\\.log\\(`DB_HOST=\\$\\{u\\.hostname\\}`\\); console\\.log\\(`DB_PORT=\\$\\{u\\.port\\|\\|\"5432\"\\}`\\);\\}catch\\{console\\.log\\(\"URL_INVALID\"\\);\\}'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npm run db:migrate$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && node --env-file=\\.env\\.local -e 'const postgres=require\\(\"postgres\"\\); const raw=process\\.env\\.DATABASE_URL\\|\\|process\\.env\\.SUPABASE_DB_URL\\|\\|process\\.env\\.SUPABASE_DATABASE_URL; if\\(!raw\\)\\{console\\.log\\(\"NOT_CONFIGURED\"\\); process\\.exit\\(0\\);\\} const sql=postgres\\(raw,\\{prepare:false,connect_timeout:8\\}\\); sql`select 1`\\.then\\(\\(\\)=>\\{console\\.log\\(\"DB_OK\"\\); return sql\\.end\\(\\{timeout:1\\}\\);\\}\\)\\.catch\\(\\(e\\)=>\\{console\\.log\\(\"DB_ERR_CODE=\"\\+\\(e\\.code\\|\\|\"n/a\"\\)\\); console\\.log\\(\"DB_ERR_MESSAGE=\"\\+String\\(e\\.message\\|\\|\"unknown\"\\)\\.split\\(\"\\\\n\"\\)\\[0\\]\\); return sql\\.end\\(\\{timeout:1\\}\\);\\}\\);'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && node --env-file=\\.env\\.local -e 'for \\(const key of \\[\"DATABASE_URL\",\"SUPABASE_DB_URL\",\"SUPABASE_DATABASE_URL\"\\]\\) \\{ const raw=process\\.env\\[key\\]; if\\(!raw\\)\\{console\\.log\\(`\\$\\{key\\}=<unset>`\\); continue;\\} try \\{ const u=new URL\\(raw\\); console\\.log\\(`\\$\\{key\\}: user=\\$\\{u\\.username\\}; host=\\$\\{u\\.hostname\\}; port=\\$\\{u\\.port\\|\\|\"5432\"\\}; sslmode=\\$\\{u\\.searchParams\\.get\\(\"sslmode\"\\)\\|\\|\"<none>\"\\}`\\); \\} catch \\{ console\\.log\\(`\\$\\{key\\}: <invalid-url>`\\); \\} \\}'$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npm run db:check$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd /workspaces/quadras-jtc/apps/web && npm run db:seed$/": {
+            "approve": true,
+            "matchCommandLine": true
         }
     },
     "remote.autoForwardPortsFallback": 0
