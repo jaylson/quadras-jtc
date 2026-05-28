@@ -72,13 +72,15 @@ export default function CourtCard({
       <div className="cc-times">
         <div className="cc-time-item">
           <span className="cc-time-label">☀️ Seco</span>
-          <span className="cc-time-value">{court.usageMinutesDry}min</span>
+          <span className="cc-time-value">S {court.usageMinutesDrySingles} | D {court.usageMinutesDryDoubles}</span>
         </div>
         <div className="cc-time-divider" />
         <div className="cc-time-item">
           <span className="cc-time-label">🌧 Chuva</span>
           <span className="cc-time-value">
-            {court.usageMinutesRain === 0 ? "Bloqueada" : `${court.usageMinutesRain}min`}
+            {court.usageMinutesRainSingles === 0 && court.usageMinutesRainDoubles === 0
+              ? "Bloqueada"
+              : `S ${court.usageMinutesRainSingles} | D ${court.usageMinutesRainDoubles}`}
           </span>
         </div>
         <div className="cc-time-divider" />

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import BlockModal from './BlockModal';
 import type { Court } from '@/lib/db/schema';
@@ -9,8 +9,8 @@ describe('BlockModal (Validação)', () => {
   const mockDelete = vi.fn();
 
   const mockCourts: Court[] = [
-    { id: 1, name: 'Quadra 1', type: 'coberta', surface: 'saibro', usageMinutesDry: 60, usageMinutesRain: 60, intervalMinutes: 15, intervalCleanMinutes: 5, active: true, createdAt: new Date(), updatedAt: new Date(), description: null, deactivateStart: null, deactivateEnd: null },
-    { id: 2, name: 'Quadra 2', type: 'descoberta', surface: 'hard', usageMinutesDry: 60, usageMinutesRain: 0, intervalMinutes: 10, intervalCleanMinutes: 5, active: true, createdAt: new Date(), updatedAt: new Date(), description: null, deactivateStart: null, deactivateEnd: null },
+    { id: 1, name: 'Quadra 1', type: 'coberta', surface: 'saibro', usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 60, usageMinutesRainDoubles: 90, intervalMinutes: 15, active: true, deactivateStart: null, deactivateEnd: null },
+    { id: 2, name: 'Quadra 2', type: 'descoberta', surface: 'hard', usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 0, usageMinutesRainDoubles: 0, intervalMinutes: 10, active: true, deactivateStart: null, deactivateEnd: null },
   ];
 
   afterEach(() => {

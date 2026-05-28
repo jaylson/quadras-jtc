@@ -15,8 +15,10 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
   const [name,              setName]              = useState(court?.name ?? "")
   const [type,              setType]              = useState<"coberta"|"descoberta">(court?.type ?? "coberta")
   const [surface,           setSurface]           = useState<"saibro"|"hard"|"grama">(court?.surface ?? "saibro")
-  const [usageMinutesDry,   setUsageMinutesDry]   = useState(court?.usageMinutesDry ?? 60)
-  const [usageMinutesRain,  setUsageMinutesRain]  = useState(court?.usageMinutesRain ?? 60)
+  const [usageMinutesDrySingles,  setUsageMinutesDrySingles]  = useState(court?.usageMinutesDrySingles ?? 60)
+  const [usageMinutesDryDoubles,  setUsageMinutesDryDoubles]  = useState(court?.usageMinutesDryDoubles ?? 60)
+  const [usageMinutesRainSingles, setUsageMinutesRainSingles] = useState(court?.usageMinutesRainSingles ?? 60)
+  const [usageMinutesRainDoubles, setUsageMinutesRainDoubles] = useState(court?.usageMinutesRainDoubles ?? 60)
   const [intervalMinutes,   setIntervalMinutes]   = useState(court?.intervalMinutes ?? 15)
   const [deactivateStart,   setDeactivateStart]   = useState(court?.deactivateStart ?? "")
   const [deactivateEnd,     setDeactivateEnd]     = useState(court?.deactivateEnd ?? "")
@@ -39,8 +41,10 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
       name: name.trim(),
       type,
       surface,
-      usageMinutesDry,
-      usageMinutesRain,
+      usageMinutesDrySingles,
+      usageMinutesDryDoubles,
+      usageMinutesRainSingles,
+      usageMinutesRainDoubles,
       intervalMinutes,
       deactivateStart: deactivateStart || null,
       deactivateEnd:   deactivateEnd   || null,
@@ -109,8 +113,10 @@ export default function CourtModal({ court, onSave, onClose }: CourtModalProps) 
           {/* Tempos */}
           <div className="mf-row mf-row--3">
             {[
-              { id:"dry",      label:"☀️ Uso Seco (min)",   val: usageMinutesDry,  set: setUsageMinutesDry  },
-              { id:"rain",     label:"🌧 Uso Chuva (min) 0=bloqueada", val: usageMinutesRain, set: setUsageMinutesRain },
+              { id:"dry-simples",   label:"☀️ Seco Simples (min)",   val: usageMinutesDrySingles,  set: setUsageMinutesDrySingles  },
+              { id:"dry-duplas",    label:"☀️ Seco Duplas (min)",    val: usageMinutesDryDoubles,  set: setUsageMinutesDryDoubles  },
+              { id:"rain-simples",  label:"🌧 Chuva Simples (min)",  val: usageMinutesRainSingles, set: setUsageMinutesRainSingles },
+              { id:"rain-duplas",   label:"🌧 Chuva Duplas (min)",   val: usageMinutesRainDoubles, set: setUsageMinutesRainDoubles },
               { id:"interval", label:"⏱ Intervalo (min)",   val: intervalMinutes, set: setIntervalMinutes  },
             ].map(({ id, label, val, set }) => (
               <div key={id} className="mf-group">

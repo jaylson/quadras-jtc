@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import CourtModal from './CourtModal';
 import type { Court } from '@/lib/db/schema';
@@ -53,8 +53,10 @@ describe('CourtModal (Validação)', () => {
       name: 'Quadra 2',
       type: 'coberta',
       surface: 'saibro',
-      usageMinutesDry: 60,
-      usageMinutesRain: 60,
+      usageMinutesDrySingles: 60,
+      usageMinutesDryDoubles: 60,
+      usageMinutesRainSingles: 60,
+      usageMinutesRainDoubles: 60,
       intervalMinutes: 15,
       deactivateStart: null,
       deactivateEnd: null
@@ -67,22 +69,21 @@ describe('CourtModal (Validação)', () => {
       name: 'Minha Quadra',
       type: 'descoberta',
       surface: 'hard',
-      usageMinutesDry: 45,
-      usageMinutesRain: 0,
+      usageMinutesDrySingles: 45,
+      usageMinutesDryDoubles: 75,
+      usageMinutesRainSingles: 0,
+      usageMinutesRainDoubles: 0,
       intervalMinutes: 10,
-      intervalCleanMinutes: 5,
       active: true,
       deactivateStart: null,
       deactivateEnd: null,
-      description: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
     };
 
     render(<CourtModal court={mockCourt} onSave={mockSave} onClose={mockClose} />);
 
     expect(screen.getByDisplayValue('Minha Quadra')).toBeInTheDocument();
     expect(screen.getByDisplayValue('45')).toBeInTheDocument(); // usageDry
+    expect(screen.getByDisplayValue('75')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /salvar alterações/i })).not.toBeDisabled();
   });
 });

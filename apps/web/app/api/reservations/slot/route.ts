@@ -10,9 +10,14 @@ import { and, eq, gt, ne } from "drizzle-orm"
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const courtId = Number(searchParams.get("courtId"))
+  const gameType = (searchParams.get("gameType") ?? "simples") as "simples" | "duplas"
 
   if (!courtId || isNaN(courtId)) {
     return NextResponse.json({ error: "courtId é obrigatório" }, { status: 400 })
+  }
+
+  if (gameType !== "simples" && gameType !== "duplas") {
+    return NextResponse.json({ error: "gameType inválido" }, { status: 400 })
   }
 
   try {
@@ -34,12 +39,13 @@ export async function GET(req: Request) {
     )
 
     const startTime = getNextAvailableSlot(court, allReservations, rainMode)
-    const durationMinutes = getEffectiveUsage(court, rainMode)
+    const durationMinutes = getEffectiveUsage(court, rainMode, gameType)
     const endTime = new Date(startTime.getTime() + durationMinutes * 60_000)
 
     return NextResponse.json({
       courtId,
       courtName:       court.name,
+      gameType,
       startTime:       startTime.toISOString(),
       endTime:         endTime.toISOString(),
       durationMinutes,

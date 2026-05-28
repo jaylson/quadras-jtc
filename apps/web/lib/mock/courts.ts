@@ -10,8 +10,10 @@ export const mockCourts: Court[] = [
     active: true,
     deactivateStart: null,
     deactivateEnd: null,
-    usageMinutesDry: 60,
-    usageMinutesRain: 60,
+    usageMinutesDrySingles: 60,
+    usageMinutesDryDoubles: 90,
+    usageMinutesRainSingles: 60,
+    usageMinutesRainDoubles: 90,
     intervalMinutes: 15,
   },
   {
@@ -22,8 +24,10 @@ export const mockCourts: Court[] = [
     active: true,
     deactivateStart: null,
     deactivateEnd: null,
-    usageMinutesDry: 60,
-    usageMinutesRain: 60,
+    usageMinutesDrySingles: 60,
+    usageMinutesDryDoubles: 90,
+    usageMinutesRainSingles: 60,
+    usageMinutesRainDoubles: 90,
     intervalMinutes: 15,
   },
   {
@@ -34,8 +38,10 @@ export const mockCourts: Court[] = [
     active: true,
     deactivateStart: null,
     deactivateEnd: null,
-    usageMinutesDry: 60,
-    usageMinutesRain: 0,   // bloqueada na chuva
+    usageMinutesDrySingles: 60,
+    usageMinutesDryDoubles: 90,
+    usageMinutesRainSingles: 0,   // bloqueada na chuva
+    usageMinutesRainDoubles: 0,   // bloqueada na chuva
     intervalMinutes: 15,
   },
   {
@@ -46,8 +52,10 @@ export const mockCourts: Court[] = [
     active: true,
     deactivateStart: null,
     deactivateEnd: null,
-    usageMinutesDry: 90,
-    usageMinutesRain: 0,   // bloqueada na chuva
+    usageMinutesDrySingles: 90,
+    usageMinutesDryDoubles: 120,
+    usageMinutesRainSingles: 0,   // bloqueada na chuva
+    usageMinutesRainDoubles: 0,   // bloqueada na chuva
     intervalMinutes: 20,
   },
 ]

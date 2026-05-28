@@ -27,8 +27,10 @@ export const courts = pgTable("courts", {
   active:           boolean("active").notNull().default(true),
   deactivateStart:  date("deactivate_start", { mode: "string" }),
   deactivateEnd:    date("deactivate_end", { mode: "string" }),
-  usageMinutesDry:  integer("usage_minutes_dry").notNull().default(60),
-  usageMinutesRain: integer("usage_minutes_rain").notNull().default(60),
+  usageMinutesDrySingles:   integer("usage_minutes_dry_singles").notNull().default(60),
+  usageMinutesDryDoubles:   integer("usage_minutes_dry_doubles").notNull().default(60),
+  usageMinutesRainSingles:  integer("usage_minutes_rain_singles").notNull().default(60),
+  usageMinutesRainDoubles:  integer("usage_minutes_rain_doubles").notNull().default(60),
   intervalMinutes:  integer("interval_minutes").notNull().default(15),
 })
 

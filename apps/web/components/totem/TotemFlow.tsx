@@ -99,29 +99,50 @@ export default function TotemFlow() {
   }, [fetchData])
 
   /* ── 2. Handlers Fluxo ── */
+  async function fetchNextSlot(courtId: number, gameType: "simples" | "duplas") {
+    const res = await fetch(`/api/reservations/slot?courtId=${courtId}&gameType=${gameType}`)
+    if (!res.ok) return null
+
+    const slotData = await res.json()
+    return {
+      startTime: slotData.startTime.slice(11, 16),
+      endTime: slotData.endTime.slice(11, 16),
+      durationMinutes: slotData.durationMinutes,
+    }
+  }
+
   async function handleSelectCourt(cs: CourtStatus) {
     setSelectedCourt(cs)
+    setGameCategory("simples")
     setLoading(true)
     try {
-      // Calcular o próximo slot disponível na API
-      const res = await fetch(`/api/reservations/slot?courtId=${cs.court.id}`)
-      if (res.ok) {
-        const slotData = await res.json()
-        setNextSlot({ startTime: slotData.startTime.slice(11, 16), endTime: slotData.endTime.slice(11, 16), durationMinutes: slotData.durationMinutes })
-      }
+      const slot = await fetchNextSlot(cs.court.id, "simples")
+      setNextSlot(slot)
     } finally {
       setLoading(false)
       setStep(2)
     }
   }
 
-  function handleSelectType(type: "simples" | "duplas") {
+  async function handleSelectType(type: "simples" | "duplas") {
+    if (!selectedCourt) return
+
+    setLoading(true)
     setGameCategory(type)
-    // Inicializa a array de players pro tamanho mínimo
-    const config = GAME_TYPES[type]
-    const p = Array.from({ length: config.min }, () => ({ name: "", phone: "", document: "" }))
-    setPlayers(p)
-    setStep(3)
+    try {
+      const slot = await fetchNextSlot(selectedCourt.court.id, type)
+      if (slot) {
+        setNextSlot(slot)
+      }
+
+      // Inicializa a array de players pro tamanho mínimo
+      const config = GAME_TYPES[type]
+      const p = Array.from({ length: config.min }, () => ({ name: "", phone: "", document: "" }))
+      setPlayers(p)
+      setStep(3)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function addPlayer() {

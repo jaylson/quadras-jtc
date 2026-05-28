@@ -25,12 +25,25 @@ export function formatDate(date: Date): string {
 }
 
 /**
- * Retorna a duração efetiva de uso em minutos conforme condição climática. (RN-09)
+ * Retorna a duração efetiva de uso em minutos conforme condição climática e tipo de jogo.
  * @param court - Quadra
  * @param isRaining - Se está chovendo
+ * @param gameType - Tipo de jogo (simples/duplas)
  */
-export function getEffectiveUsage(court: Court, isRaining: boolean): number {
-  return isRaining ? court.usageMinutesRain : court.usageMinutesDry
+export function getEffectiveUsage(
+  court: Court,
+  isRaining: boolean,
+  gameType: "simples" | "duplas"
+): number {
+  if (isRaining) {
+    return gameType === "duplas"
+      ? court.usageMinutesRainDoubles
+      : court.usageMinutesRainSingles
+  }
+
+  return gameType === "duplas"
+    ? court.usageMinutesDryDoubles
+    : court.usageMinutesDrySingles
 }
 
 /**
@@ -92,8 +105,13 @@ export function getCourtStatus(
   // RN-01: quadra inativa
   if (!court.active) return "inativa"
 
-  // RN-02: quadra descoberta bloqueada pela chuva
-  if (isRaining && court.type === "descoberta" && court.usageMinutesRain === 0) {
+  // RN-02: quadra descoberta bloqueada pela chuva quando nenhum formato e permitido
+  if (
+    isRaining &&
+    court.type === "descoberta" &&
+    court.usageMinutesRainSingles === 0 &&
+    court.usageMinutesRainDoubles === 0
+  ) {
     return "bloqueada-chuva"
   }
 

@@ -115,10 +115,10 @@ function buildMockStatus(now: Date, dateStr: string) {
   const addHours = (offset: number) => new Date(now.getTime() + offset * 60 * 60 * 1000)
 
   const mockCourts: Court[] = [
-    { id: 1, name: "Quadra 1", type: "coberta",    surface: "saibro", active: true, usageMinutesDry: 60, usageMinutesRain: 60, intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
-    { id: 2, name: "Quadra 2", type: "coberta",    surface: "hard",   active: true, usageMinutesDry: 60, usageMinutesRain: 60, intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
-    { id: 3, name: "Quadra 3", type: "descoberta", surface: "saibro", active: true, usageMinutesDry: 60, usageMinutesRain: 0,  intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
-    { id: 4, name: "Quadra 4", type: "descoberta", surface: "grama",  active: true, usageMinutesDry: 60, usageMinutesRain: 0,  intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
+    { id: 1, name: "Quadra 1", type: "coberta",    surface: "saibro", active: true, usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 60, usageMinutesRainDoubles: 90, intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
+    { id: 2, name: "Quadra 2", type: "coberta",    surface: "hard",   active: true, usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 60, usageMinutesRainDoubles: 90, intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
+    { id: 3, name: "Quadra 3", type: "descoberta", surface: "saibro", active: true, usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 0,  usageMinutesRainDoubles: 0,  intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
+    { id: 4, name: "Quadra 4", type: "descoberta", surface: "grama",  active: true, usageMinutesDrySingles: 60, usageMinutesDryDoubles: 90, usageMinutesRainSingles: 0,  usageMinutesRainDoubles: 0,  intervalMinutes: 15, deactivateStart: null, deactivateEnd: null },
   ]
 
   const mockReservations: Reservation[] = [

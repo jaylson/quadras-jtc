@@ -44,8 +44,10 @@ export async function POST(req: Request) {
         active: body.active ?? true,
         deactivateStart: body.deactivateStart ?? null,
         deactivateEnd: body.deactivateEnd ?? null,
-        usageMinutesDry: body.usageMinutesDry ?? 60,
-        usageMinutesRain: body.usageMinutesRain ?? 60,
+        usageMinutesDrySingles: body.usageMinutesDrySingles ?? 60,
+        usageMinutesDryDoubles: body.usageMinutesDryDoubles ?? 60,
+        usageMinutesRainSingles: body.usageMinutesRainSingles ?? 60,
+        usageMinutesRainDoubles: body.usageMinutesRainDoubles ?? 60,
         intervalMinutes: body.intervalMinutes ?? 15,
       }
       store.courts.push(newCourt)
@@ -64,8 +66,10 @@ export async function POST(req: Request) {
         active:           body.active ?? true,
         deactivateStart:  body.deactivateStart ?? null,
         deactivateEnd:    body.deactivateEnd ?? null,
-        usageMinutesDry:  body.usageMinutesDry ?? 60,
-        usageMinutesRain: body.usageMinutesRain ?? 60,
+        usageMinutesDrySingles: body.usageMinutesDrySingles ?? 60,
+        usageMinutesDryDoubles: body.usageMinutesDryDoubles ?? 60,
+        usageMinutesRainSingles: body.usageMinutesRainSingles ?? 60,
+        usageMinutesRainDoubles: body.usageMinutesRainDoubles ?? 60,
         intervalMinutes:  body.intervalMinutes ?? 15,
       })
       .returning()

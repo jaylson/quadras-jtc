@@ -52,7 +52,9 @@ export default function TotemCourtCard({ court, status, remainingMinutes, nextSl
       <div className="tcc-surface">
         <span className="tcc-dot" style={{ background: surfColor }} />
         <span className="tcc-surf-label">{court.surface.toUpperCase()}</span>
-        <span className="tcc-usage-time">⏱ {rainMode ? court.usageMinutesRain : court.usageMinutesDry} min</span>
+        <span className="tcc-usage-time">
+          ⏱ S {rainMode ? court.usageMinutesRainSingles : court.usageMinutesDrySingles} | D {rainMode ? court.usageMinutesRainDoubles : court.usageMinutesDryDoubles}
+        </span>
       </div>
 
       <div className="tcc-status-box">

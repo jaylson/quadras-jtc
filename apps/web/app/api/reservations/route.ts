@@ -112,7 +112,7 @@ export async function POST(req: Request) {
 
     // F2-13: calcular slot
     const startTime = getNextAvailableSlot(court, reservationsToday, rainMode)
-    const durationMinutes = getEffectiveUsage(court, rainMode)
+    const durationMinutes = getEffectiveUsage(court, rainMode, gameType)
     const endTime = new Date(startTime.getTime() + durationMinutes * 60_000)
 
     // F2-14: validação de conflito
