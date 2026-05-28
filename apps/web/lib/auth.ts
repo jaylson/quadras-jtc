@@ -17,19 +17,19 @@ const devUsers: DevUser[] = [
     id: "dev-admin",
     username: "admin",
     role: "admin",
-    passwords: ["A9v!K2m#R7t@Q4xL", "admin123"],
+    passwords: ["admin123@"],
   },
   {
     id: "dev-totem",
     username: "totem",
     role: "totem",
-    passwords: ["T8p$N5y!C3r%W6dZ", "totem123"],
+    passwords: ["totem"],
   },
   {
     id: "dev-tv",
     username: "tv",
     role: "tv",
-    passwords: ["V4q@L9s#B2m!H7xP", "tv123"],
+    passwords: ["tv"],
   },
 ]
 
